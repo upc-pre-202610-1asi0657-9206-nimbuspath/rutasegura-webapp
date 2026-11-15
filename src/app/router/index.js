@@ -18,6 +18,7 @@ import ParentProfileView from '@/modules/parent/views/ParentProfileView.vue'
 import AdminLayout from '@/modules/admin/layouts/AdminLayout.vue'
 import AdminRoutesView from '@/modules/admin/views/AdminRoutesView.vue'
 import AdminResourcesView from '@/modules/admin/views/AdminResourcesView.vue'
+import AdminTripsView from '@/modules/admin/views/AdminTripsView.vue'
 
 const routes = [
   {
@@ -65,6 +66,11 @@ const routes = [
         path: 'resources',
         name: 'admin-resources',
         component: AdminResourcesView,
+      },
+      {
+        path: 'trips',
+        name: 'admin-trips',
+        component: AdminTripsView,
       },
     ],
   },
