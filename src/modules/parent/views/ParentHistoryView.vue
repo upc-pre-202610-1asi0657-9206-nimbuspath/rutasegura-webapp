@@ -1,4 +1,5 @@
 <script setup>
+import AppFeedback from '@/shared/components/AppFeedback.vue'
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import {
@@ -86,12 +87,12 @@ function statusClasses(status) {
 function topStripClass(status) {
   const norm = normalizeTripStatus(status)
   if (norm === 'COMPLETED') {
-    return 'from-emerald-500 via-teal-400 to-sky-400'
+    return 'from-emerald-500 via-teal-400 to-brand-navy-light'
   }
   if (norm === 'IN_PROGRESS') {
-    return 'from-blue-600 via-sky-400 to-emerald-400'
+    return 'from-brand-navy via-brand-yellow to-brand-navy-light'
   }
-  return 'from-amber-400 via-orange-400 to-blue-500'
+  return 'from-amber-400 via-orange-400 to-brand-navy-light'
 }
 
 function directionLabel(direction) {
@@ -185,7 +186,6 @@ async function loadHistory() {
       ? studentData
       : []
   } catch (err) {
-    console.error(err)
 
     error.value =
       err?.response?.data?.detail ||
@@ -322,56 +322,10 @@ onMounted(loadHistory)
     </section>
 
     <!-- ───────── ERROR BANNER ───────── -->
-    <div
-      v-if="error"
-      role="alert"
-      class="shake mt-6 flex items-start justify-between gap-4 rounded-2xl border border-red-200 bg-red-50/90 p-4 shadow-xs"
-    >
-      <div class="flex gap-3">
-        <TriangleAlert :size="19" class="mt-0.5 shrink-0 text-red-600" />
-        <div>
-          <p class="text-sm font-semibold text-red-800">No pudimos cargar el historial</p>
-          <p class="mt-0.5 text-sm text-red-700">{{ error }}</p>
-        </div>
-      </div>
-
-      <button
-        type="button"
-        class="inline-flex shrink-0 items-center gap-1.5 rounded-xl border border-red-200 bg-white px-3 py-1.5 text-xs font-semibold text-red-700 transition hover:bg-red-100"
-        @click="loadHistory"
-      >
-        <RefreshCcw :size="14" />
-        Reintentar
-      </button>
-    </div>
+    <AppFeedback v-if="error" class="mt-6" kind="error" :message="error" retry-label="Volver a intentar" @retry="loadHistory" />
 
     <!-- ───────── LOADING SKELETONS ───────── -->
-    <div
-      v-if="loading"
-      class="mt-7 space-y-4"
-    >
-      <div
-        v-for="index in 3"
-        :key="index"
-        class="h-44 animate-pulse rounded-3xl border border-slate-200/80 bg-white p-6 shadow-xs"
-      >
-        <div class="flex items-center justify-between">
-          <div class="flex items-center gap-3.5">
-            <div class="h-12 w-12 rounded-2xl bg-slate-100"></div>
-            <div class="space-y-2">
-              <div class="h-4 w-44 rounded bg-slate-100"></div>
-              <div class="h-3 w-28 rounded bg-slate-100"></div>
-            </div>
-          </div>
-          <div class="h-6 w-20 rounded-full bg-slate-100"></div>
-        </div>
-        <div class="mt-6 grid grid-cols-3 gap-3">
-          <div class="h-16 rounded-2xl bg-slate-100"></div>
-          <div class="h-16 rounded-2xl bg-slate-100"></div>
-          <div class="h-16 rounded-2xl bg-slate-100"></div>
-        </div>
-      </div>
-    </div>
+    <AppFeedback v-if="loading" class="mt-6" kind="loading" message="Cargando información…" />
 
     <!-- ───────── EMPTY STATE ───────── -->
     <section
@@ -379,7 +333,7 @@ onMounted(loadHistory)
       class="reveal mt-7 relative overflow-hidden rounded-3xl border border-slate-200/90 bg-white px-6 py-14 text-center shadow-xs"
       style="--d: 100ms"
     >
-      <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-50 to-emerald-50 text-blue-600 ring-1 ring-blue-500/15">
+      <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-50 to-blue-100 text-blue-600 ring-1 ring-blue-500/15">
         <Clock3 :size="28" />
       </div>
 
@@ -431,7 +385,7 @@ onMounted(loadHistory)
 
           <button
             type="button"
-            class="inline-flex items-center gap-2 rounded-xl px-3.5 py-2 text-xs font-bold transition-all"
+            class="rs-button-primary inline-flex items-center gap-2 rounded-xl px-3.5 py-2 text-xs font-bold transition-all"
             :class="
               activeFilter === 'IN_PROGRESS'
                 ? 'bg-blue-600 text-white shadow-xs'
@@ -524,7 +478,7 @@ onMounted(loadHistory)
             <div class="flex flex-wrap items-start justify-between gap-4">
               <div class="flex min-w-0 items-center gap-3.5">
                 <div
-                  class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-600 to-blue-800 text-white shadow-md shadow-blue-600/20"
+                  class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-brand-navy to-brand-navy-light text-white shadow-md shadow-blue-600/20"
                 >
                   <BusFront :size="21" />
                 </div>
@@ -630,7 +584,7 @@ onMounted(loadHistory)
 .hero-banner {
   background-image:
     radial-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
-    linear-gradient(to bottom right, #020617, #0f172a 60%, #09152b);
+    linear-gradient(to bottom right, var(--rs-navy), var(--rs-navy-light) 60%, var(--rs-navy));
   background-size: 26px 26px, 100% 100%;
 }
 

@@ -1,4 +1,6 @@
 <script setup>
+import AppFeedback from '@/shared/components/AppFeedback.vue'
+import AppConfirmDialog from '@/shared/components/AppConfirmDialog.vue'
 import { computed, onMounted, reactive, ref } from 'vue'
 import {
   TriangleAlert,
@@ -127,7 +129,7 @@ async function loadStudents() {
     const data = await getMyStudents()
     students.value = Array.isArray(data) ? data : []
   } catch (err) {
-    console.error(err)
+
     error.value = getApiError(
       err,
       'No fue posible cargar los estudiantes.'
@@ -192,7 +194,7 @@ async function submitStudent() {
     showStudentModal.value = false
     resetStudentForm()
   } catch (err) {
-    console.error(err)
+
     studentFormError.value = getApiError(
       err,
       'No fue posible registrar al estudiante.'
@@ -218,7 +220,7 @@ async function confirmRemoveStudent() {
     students.value = students.value.filter((item) => item.id !== target.id)
     studentToDelete.value = null
   } catch (err) {
-    console.error(err)
+
     error.value = getApiError(
       err,
       'No fue posible eliminar al estudiante.'
@@ -251,7 +253,7 @@ async function searchRoute() {
   try {
     routeOffer.value = await getRouteOffer(enrollmentCode.value.trim())
   } catch (err) {
-    console.error(err)
+
     enrollmentError.value = getApiError(
       err,
       'No encontramos una ruta con ese código.'
@@ -277,7 +279,7 @@ async function confirmEnrollment() {
     showEnrollmentModal.value = false
     await loadStudents()
   } catch (err) {
-    console.error(err)
+
     enrollmentError.value = getApiError(
       err,
       'No fue posible inscribir al estudiante en la ruta.'
@@ -398,7 +400,7 @@ onMounted(loadStudents)
         <div class="flex shrink-0 items-center gap-2.5 pt-2 lg:pt-8">
           <button
             type="button"
-            class="group inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-blue-500 px-5 py-3 text-xs font-bold text-white shadow-lg shadow-blue-600/25 ring-1 ring-white/20 transition-all duration-200 hover:-translate-y-0.5 hover:from-blue-500 hover:to-blue-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-400 sm:text-sm"
+            class="group inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-brand-navy to-brand-navy-light px-5 py-3 text-xs font-bold text-white shadow-lg shadow-blue-600/25 ring-1 ring-white/20 transition-all duration-200 hover:-translate-y-0.5 hover:from-brand-navy hover:to-brand-navy-light focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-400 sm:text-sm"
             @click="openStudentModal"
           >
             <Plus :size="17" class="transition-transform duration-200 group-hover:rotate-90" />
@@ -420,50 +422,10 @@ onMounted(loadStudents)
     </section>
 
     <!-- ───────── PAGE ERROR BANNER ───────── -->
-    <div
-      v-if="error"
-      role="alert"
-      class="shake mt-6 flex items-start justify-between gap-4 rounded-2xl border border-red-200 bg-red-50/90 p-4 shadow-xs"
-    >
-      <div class="flex gap-3">
-        <TriangleAlert :size="19" class="mt-0.5 shrink-0 text-red-600" />
-        <div>
-          <p class="text-sm font-semibold text-red-800">Ocurrió un inconveniente</p>
-          <p class="mt-0.5 text-sm text-red-700">{{ error }}</p>
-        </div>
-      </div>
-
-      <button
-        type="button"
-        class="inline-flex shrink-0 items-center gap-1.5 rounded-xl border border-red-200 bg-white px-3 py-1.5 text-xs font-semibold text-red-700 transition hover:bg-red-100"
-        @click="loadStudents"
-      >
-        <RefreshCcw :size="14" />
-        Reintentar
-      </button>
-    </div>
+    <AppFeedback v-if="error" class="mt-6" kind="error" :message="error" retry-label="Volver a intentar" @retry="loadStudents" />
 
     <!-- ───────── LOADING SKELETONS ───────── -->
-    <div
-      v-if="loading"
-      class="mt-7 grid gap-5 lg:grid-cols-2"
-    >
-      <div
-        v-for="index in 2"
-        :key="index"
-        class="h-72 animate-pulse rounded-3xl border border-slate-200/80 bg-white p-6 shadow-xs"
-      >
-        <div class="flex items-center gap-4">
-          <div class="h-13 w-13 rounded-2xl bg-slate-100"></div>
-          <div class="space-y-2">
-            <div class="h-4 w-40 rounded bg-slate-100"></div>
-            <div class="h-3 w-28 rounded bg-slate-100"></div>
-          </div>
-        </div>
-        <div class="mt-6 h-16 rounded-2xl bg-slate-100"></div>
-        <div class="mt-5 h-20 rounded-2xl bg-slate-100"></div>
-      </div>
-    </div>
+    <AppFeedback v-if="loading" class="mt-6" kind="loading" message="Cargando información…" />
 
     <!-- ───────── EMPTY STATE ───────── -->
     <section
@@ -471,7 +433,7 @@ onMounted(loadStudents)
       class="reveal mt-7 relative overflow-hidden rounded-3xl border border-slate-200/90 bg-white px-6 py-14 text-center shadow-xs"
       style="--d: 100ms"
     >
-      <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-50 to-emerald-50 text-blue-600 ring-1 ring-blue-500/15">
+      <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-50 to-blue-100 text-blue-600 ring-1 ring-blue-500/15">
         <UserRoundPlus :size="28" />
       </div>
 
@@ -505,7 +467,7 @@ onMounted(loadStudents)
         class="group relative flex flex-col justify-between overflow-hidden rounded-3xl border border-slate-200/90 bg-white shadow-xs ring-1 ring-slate-900/[0.02] transition-all duration-200 hover:-translate-y-0.5 hover:border-blue-300/80 hover:shadow-lg"
       >
         <!-- Top Gradient Accent Strip -->
-        <div class="h-1.5 w-full bg-gradient-to-r from-blue-600 via-sky-400 to-emerald-400"></div>
+        <div class="h-1.5 w-full bg-gradient-to-r from-brand-navy via-brand-yellow to-brand-navy-light"></div>
 
         <div class="flex flex-1 flex-col justify-between p-5 sm:p-6">
           <div>
@@ -513,7 +475,7 @@ onMounted(loadStudents)
             <div class="flex items-start justify-between gap-4">
               <div class="flex min-w-0 items-center gap-3.5">
                 <div
-                  class="flex h-13 w-13 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-600 to-blue-800 text-sm font-bold text-white shadow-md shadow-blue-600/20"
+                  class="flex h-13 w-13 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-brand-navy to-brand-navy-light text-sm font-bold text-white shadow-md shadow-blue-600/20"
                 >
                   {{ getStudentInitials(student.fullName) }}
                 </div>
@@ -674,7 +636,7 @@ onMounted(loadStudents)
       >
         <div class="modal-card relative max-h-[92dvh] w-full max-w-2xl overflow-hidden rounded-3xl border border-slate-200/90 bg-white shadow-2xl">
           <!-- Top Gradient Accent -->
-          <div class="h-1.5 w-full bg-gradient-to-r from-blue-600 via-sky-400 to-emerald-400"></div>
+          <div class="h-1.5 w-full bg-gradient-to-r from-brand-navy via-brand-yellow to-brand-navy-light"></div>
 
           <!-- Modal Header -->
           <div class="flex items-start justify-between border-b border-slate-100 px-6 py-4 sm:px-7">
@@ -874,7 +836,7 @@ onMounted(loadStudents)
       >
         <div class="modal-card relative w-full max-w-lg overflow-hidden rounded-3xl border border-slate-200/90 bg-white shadow-2xl">
           <!-- Top Gradient Accent -->
-          <div class="h-1.5 w-full bg-gradient-to-r from-emerald-500 via-sky-400 to-blue-600"></div>
+          <div class="h-1.5 w-full bg-gradient-to-r from-emerald-500 via-brand-yellow to-brand-navy-light"></div>
 
           <div class="p-6 sm:p-7">
             <div class="flex items-start justify-between gap-4">
@@ -950,7 +912,7 @@ onMounted(loadStudents)
             <!-- Route Offer Preview Ticket -->
             <div
               v-if="routeOffer"
-              class="mt-5 overflow-hidden rounded-2xl border border-blue-200/80 bg-gradient-to-br from-blue-50/70 via-white to-emerald-50/40 p-5 shadow-xs"
+              class="mt-5 overflow-hidden rounded-2xl border border-blue-200/80 bg-gradient-to-br from-brand-navy/70 via-white to-brand-navy-light/40 p-5 shadow-xs"
             >
               <div class="flex items-start justify-between gap-3">
                 <div>
@@ -991,7 +953,7 @@ onMounted(loadStudents)
 
               <button
                 type="button"
-                class="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 py-3 text-sm font-bold text-white shadow-md shadow-blue-600/20 transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-600 disabled:shadow-none"
+                class="rs-button-primary mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 py-3 text-sm font-bold text-white shadow-md shadow-blue-600/20 transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-600 disabled:shadow-none"
                 :disabled="enrolling || !routeOffer.acceptsEnrollments"
                 @click="confirmEnrollment"
               >
@@ -1010,51 +972,14 @@ onMounted(loadStudents)
       </div>
     </Transition>
 
-    <!-- ───────── MODAL 3: CONFIRMAR ELIMINACIÓN DE ESTUDIANTE ───────── -->
-    <Transition name="modal-fade">
-      <div
-        v-if="studentToDelete"
-        class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-xs"
-        role="dialog"
-        aria-modal="true"
-        @click.self="studentToDelete = null"
-      >
-        <div class="modal-card w-full max-w-md overflow-hidden rounded-3xl border border-slate-200 bg-white p-6 text-center shadow-2xl">
-          <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-red-50 text-red-600 ring-1 ring-red-500/20">
-            <Trash2 :size="22" />
-          </div>
-
-          <h3 class="mt-4 text-lg font-bold text-slate-900">
-            ¿Eliminar a {{ studentToDelete.fullName }}?
-          </h3>
-
-          <p class="mt-2 text-sm leading-relaxed text-slate-500">
-            Esta acción retirará al estudiante de tu cuenta familiar y cancelará sus inscripciones en las rutas asociadas.
-          </p>
-
-          <div class="mt-6 grid grid-cols-2 gap-3">
-            <button
-              type="button"
-              :disabled="deletingStudent"
-              class="rounded-xl border border-slate-200 bg-white py-2.5 text-xs font-bold text-slate-700 transition hover:bg-slate-50 sm:text-sm"
-              @click="studentToDelete = null"
-            >
-              Cancelar
-            </button>
-
-            <button
-              type="button"
-              :disabled="deletingStudent"
-              class="inline-flex items-center justify-center gap-2 rounded-xl bg-red-600 py-2.5 text-xs font-bold text-white shadow-md shadow-red-600/20 transition hover:bg-red-700 disabled:opacity-60 sm:text-sm"
-              @click="confirmRemoveStudent"
-            >
-              <LoaderCircle v-if="deletingStudent" :size="15" class="animate-spin" />
-              <span>{{ deletingStudent ? 'Eliminando...' : 'Sí, eliminar' }}</span>
-            </button>
-          </div>
-        </div>
-      </div>
-    </Transition>
+    <AppConfirmDialog
+      :open="Boolean(studentToDelete)"
+      :title="`¿Eliminar a ${studentToDelete?.fullName || 'este estudiante'}?`"
+      message="Se retirará al estudiante de tu cuenta. Si tiene inscripciones activas, deberás retirarlo de sus rutas antes de eliminarlo."
+      :busy="deletingStudent"
+      confirm-label="Sí, eliminar" danger
+      @cancel="studentToDelete = null" @confirm="confirmRemoveStudent"
+    />
 
   </div>
 </template>
@@ -1063,7 +988,7 @@ onMounted(loadStudents)
 .hero-banner {
   background-image:
     radial-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
-    linear-gradient(to bottom right, #020617, #0f172a 60%, #09152b);
+    linear-gradient(to bottom right, var(--rs-navy), var(--rs-navy-light) 60%, var(--rs-navy));
   background-size: 26px 26px, 100% 100%;
 }
 
@@ -1087,8 +1012,8 @@ onMounted(loadStudents)
   border: 1px solid #e2e8f0;
   border-radius: 12px;
   outline: none;
-  background: #f8fafc;
-  color: #0f172a;
+  background: var(--rs-background);
+  color: var(--rs-navy-light);
   font-size: 14px;
   transition: all 0.15s ease;
 }
@@ -1098,7 +1023,7 @@ onMounted(loadStudents)
 }
 
 .field input:focus {
-  border-color: #2563eb;
+  border-color: var(--rs-navy);
   background: #ffffff;
   box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.12);
 }

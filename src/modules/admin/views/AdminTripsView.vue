@@ -1,4 +1,5 @@
 <script setup>
+import AppFeedback from '@/shared/components/AppFeedback.vue'
 import { computed, onMounted, ref } from 'vue'
 import {
   AlertTriangle,
@@ -170,18 +171,18 @@ function statusClass(status) {
 
 function topStripClass(status) {
   if (status === 'InProgress') {
-    return 'from-blue-600 via-sky-400 to-emerald-400'
+    return 'from-brand-navy via-brand-yellow to-brand-navy-light'
   }
 
   if (status === 'Completed') {
-    return 'from-emerald-500 via-teal-400 to-sky-400'
+    return 'from-emerald-500 via-teal-400 to-brand-navy-light'
   }
 
   if (status === 'Cancelled') {
     return 'from-red-500 to-orange-400'
   }
 
-  return 'from-amber-400 via-orange-400 to-blue-500'
+  return 'from-amber-400 via-orange-400 to-brand-navy-light'
 }
 
 function directionLabel(direction) {
@@ -375,7 +376,6 @@ async function loadTrips() {
         ? vehicleData
         : []
   } catch (err) {
-    console.error(err)
 
     error.value = backendError(
       err,
@@ -440,7 +440,6 @@ async function submitSchedule() {
 
     await loadTrips()
   } catch (err) {
-    console.error(err)
 
     scheduleError.value =
       backendError(
@@ -471,7 +470,6 @@ async function openLiveTrip(
         trip.tripId,
       )
   } catch (err) {
-    console.error(err)
 
     liveError.value =
       backendError(
@@ -608,7 +606,7 @@ onMounted(loadTrips)
         <div class="flex shrink-0 items-center gap-2.5 pt-2 lg:pt-8">
           <button
             type="button"
-            class="group inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-blue-500 px-5 py-3 text-xs font-bold text-white shadow-lg shadow-blue-600/25 ring-1 ring-white/20 transition-all duration-200 hover:-translate-y-0.5 hover:from-blue-500 hover:to-blue-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-400 sm:text-sm"
+            class="group inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-brand-navy to-brand-navy-light px-5 py-3 text-xs font-bold text-white shadow-lg shadow-blue-600/25 ring-1 ring-white/20 transition-all duration-200 hover:-translate-y-0.5 hover:from-brand-navy hover:to-brand-navy-light focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-400 sm:text-sm"
             @click="openScheduleModal"
           >
             <Plus :size="17" class="transition-transform duration-200 group-hover:rotate-90" />
@@ -657,7 +655,7 @@ onMounted(loadTrips)
           <div class="flex flex-wrap gap-1.5" role="tablist" aria-label="Filtrar viajes por estado">
             <button
               type="button"
-              class="rounded-xl border px-3 py-2 text-xs font-bold transition-all"
+              class="rs-button-primary rounded-xl border px-3 py-2 text-xs font-bold transition-all"
               :class="
                 statusFilter === ''
                   ? 'border-blue-600 bg-blue-600 text-white shadow-xs'
@@ -683,7 +681,7 @@ onMounted(loadTrips)
 
             <button
               type="button"
-              class="rounded-xl border px-3 py-2 text-xs font-bold transition-all"
+              class="rs-button-primary rounded-xl border px-3 py-2 text-xs font-bold transition-all"
               :class="
                 statusFilter === 'InProgress'
                   ? 'border-blue-600 bg-blue-600 text-white shadow-xs'
@@ -777,40 +775,10 @@ onMounted(loadTrips)
     </section>
 
     <!-- ───────── ERROR BANNER ───────── -->
-    <div
-      v-if="error"
-      role="alert"
-      class="shake mt-6 flex items-start justify-between gap-4 rounded-2xl border border-red-200 bg-red-50/90 p-4 shadow-xs"
-    >
-      <div class="flex gap-3">
-        <AlertTriangle :size="19" class="mt-0.5 shrink-0 text-red-600" />
-        <div>
-          <p class="text-sm font-semibold text-red-800">Error al cargar los viajes</p>
-          <p class="mt-0.5 text-sm text-red-700">{{ error }}</p>
-        </div>
-      </div>
-
-      <button
-        type="button"
-        class="inline-flex shrink-0 items-center gap-1.5 rounded-xl border border-red-200 bg-white px-3 py-1.5 text-xs font-semibold text-red-700 transition hover:bg-red-100"
-        @click="loadTrips"
-      >
-        <RefreshCcw :size="14" />
-        Reintentar
-      </button>
-    </div>
+    <AppFeedback v-if="error" class="mt-6" kind="error" :message="error" retry-label="Volver a intentar" @retry="loadTrips" />
 
     <!-- ───────── LOADING SKELETONS ───────── -->
-    <section
-      v-if="loading"
-      class="mt-6 space-y-4"
-    >
-      <div
-        v-for="index in 3"
-        :key="index"
-        class="h-44 animate-pulse rounded-3xl border border-slate-200/80 bg-white p-6 shadow-xs"
-      />
-    </section>
+    <AppFeedback v-if="loading" class="mt-6" kind="loading" message="Cargando información…" />
 
     <!-- ───────── EMPTY STATE ───────── -->
     <section
@@ -818,7 +786,7 @@ onMounted(loadTrips)
       class="reveal mt-6 relative overflow-hidden rounded-3xl border border-slate-200/90 bg-white px-6 py-16 text-center shadow-xs"
       style="--d: 160ms"
     >
-      <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-50 to-indigo-50 text-blue-600 ring-1 ring-blue-500/15">
+      <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-50 to-blue-100 text-blue-600 ring-1 ring-blue-500/15">
         <CalendarDays :size="28" />
       </div>
 
@@ -861,7 +829,7 @@ onMounted(loadTrips)
           <div class="flex flex-col justify-between gap-4 lg:flex-row lg:items-center">
             <div class="flex items-start gap-3.5">
               <div
-                class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-700 text-white shadow-md shadow-blue-600/20"
+                class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-brand-navy to-brand-navy-light text-white shadow-md shadow-blue-600/20"
               >
                 <BusFront :size="21" />
               </div>
@@ -981,7 +949,7 @@ onMounted(loadTrips)
       >
         <div class="modal-card relative w-full max-w-lg overflow-hidden rounded-3xl border border-slate-200/90 bg-white shadow-2xl">
           <!-- Top Gradient Accent Strip -->
-          <div class="h-1.5 w-full bg-gradient-to-r from-blue-600 via-sky-400 to-emerald-400"></div>
+          <div class="h-1.5 w-full bg-gradient-to-r from-brand-navy via-brand-yellow to-brand-navy-light"></div>
 
           <!-- Modal Header -->
           <div class="flex items-start justify-between border-b border-slate-100 px-6 py-4 sm:px-7">
@@ -1108,7 +1076,7 @@ onMounted(loadTrips)
       >
         <div class="modal-card relative w-full max-w-xl overflow-hidden rounded-3xl border border-slate-200/90 bg-white shadow-2xl">
           <!-- Top Gradient Accent Strip -->
-          <div class="h-1.5 w-full bg-gradient-to-r from-blue-600 via-sky-400 to-emerald-400"></div>
+          <div class="h-1.5 w-full bg-gradient-to-r from-brand-navy via-brand-yellow to-brand-navy-light"></div>
 
           <!-- Modal Header -->
           <div class="flex items-start justify-between border-b border-slate-100 px-6 py-4 sm:px-7">
@@ -1228,7 +1196,7 @@ onMounted(loadTrips)
 .hero-banner {
   background-image:
     radial-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
-    linear-gradient(to bottom right, #020617, #0f172a 60%, #09152b);
+    linear-gradient(to bottom right, var(--rs-navy), var(--rs-navy-light) 60%, var(--rs-navy));
   background-size: 26px 26px, 100% 100%;
 }
 

@@ -1,199 +1,116 @@
-
 import { defineStore } from 'pinia'
-
-import {
-  signIn,
-  getCurrentUser,
-} from '../services/authService'
-
-import {
-  readAuthSession,
-  saveAuthSession,
-  clearAuthSession,
-} from '@/shared/api/authSessionStorage'
+import { getCurrentUser, signIn } from '../services/authService'
+import { clearAuthSession, isTokenExpired, readAuthSession, readAuthToken, saveAuthSession } from '@/shared/api/authSessionStorage'
 
 const WEB_ROLES = ['ADMIN', 'PARENT']
-const KNOWN_ROLES = ['ADMIN', 'PARENT', 'DRIVER']
-
-function normalizeRole(role) {
-  return String(role ?? '').trim().toUpperCase()
-}
-
-
+const normalizeRole = (role) => String(role ?? '').trim().toUpperCase()
+let restorePromise = null
+let sessionVersion = 0
 function getErrorMessage(error) {
   const status = error?.response?.status
-  const code = error?.response?.data?.code
-
-  if (status === 401 || code === 'InvalidCredentials') {
-    return 'Correo electrónico o contraseña incorrectos.'
-  }
-
-  if (status === 429 || code === 'TOO_MANY_REQUESTS') {
-    return 'Demasiados intentos. Espera un momento e inténtalo nuevamente.'
-  }
-
-  if (code === 'OrganizationNotActive') {
-    return 'La organización no se encuentra activa.'
-  }
-
-  if (!error?.response) {
-    if (error?.code === 'ERR_NETWORK' || error?.message === 'Network Error') {
-      return 'No fue posible conectar con el servidor. Comprueba tu conexión.'
-    }
-
-    return error?.message ||
-      'No fue posible conectar con el servidor.'
-  }
-
-  return error?.message ||
-    'No fue posible iniciar sesión. Inténtalo nuevamente.'
+  if (status === 401) return 'Correo electrónico o contraseña incorrectos.'
+  if (status === 429) return 'Demasiados intentos. Espera un momento e inténtalo nuevamente.'
+  if (error?.response?.data?.code === 'OrganizationNotActive') return 'La organización no se encuentra activa.'
+  if (status === 403) return 'Tu cuenta no tiene acceso a esta operación.'
+  if ((!error?.response && error?.isAxiosError) || status >= 500) return 'No fue posible conectar con el servidor. Comprueba tu conexión e inténtalo nuevamente.'
+  return error?.response?.data?.detail || error?.message || 'No fue posible iniciar sesión.'
 }
-
-
+function accountUser(account) {
+  return { id: account.id, firstName: account.firstName, lastName: account.lastName,
+    email: account.email, roleTier: normalizeRole(account.roleTier), organizationId: account.organizationId }
+}
 export const useAuthStore = defineStore('auth', {
-  state: () => ({
-    user: null,
-    token: null,
-    loading: false,
-    initialized: false,
-    error: null,
-  }),
-
+  state: () => ({ user: null, token: null, loading: false, verifying: false, initialized: false,
+    error: null, notice: null, sessionReason: null, restoreUnavailable: false }),
   getters: {
-    isAuthenticated: (state) =>
-      Boolean(state.token && state.user),
-
-    userRole: (state) =>
-      normalizeRole(state.user?.roleTier),
-
-    isAdmin: (state) =>
-      normalizeRole(state.user?.roleTier) === 'ADMIN',
-
-    isParent: (state) =>
-      normalizeRole(state.user?.roleTier) === 'PARENT',
-
-    isDriver: (state) =>
-      normalizeRole(state.user?.roleTier) === 'DRIVER',
+    isAuthenticated: (state) => Boolean(state.token && state.user),
+    userRole: (state) => normalizeRole(state.user?.roleTier),
+    isAdmin: (state) => state.user?.roleTier === 'ADMIN',
+    isParent: (state) => state.user?.roleTier === 'PARENT',
   },
-
   actions: {
     async login(credentials) {
+      const version = ++sessionVersion
       this.loading = true
       this.error = null
-
+      this.notice = null
+      this.sessionReason = null
+      this.restoreUnavailable = false
       try {
         const response = await signIn(credentials)
-
-        if (!response?.token || !response?.id) {
-          throw new Error(
-            'El servidor devolvió una respuesta de autenticación inválida.'
-          )
-        }
-
-        const role = normalizeRole(response.roleTier)
-
-        if (!KNOWN_ROLES.includes(role)) {
-          throw new Error(
-            'Tu cuenta no tiene un perfil reconocido en RutaSegura.'
-          )
-        }
-
-        const user = {
-          id: response.id,
-          firstName: response.firstName,
-          lastName: response.lastName,
-          email: response.email,
-          roleTier: role,
-          organizationId: response.organizationId,
-        }
-
-        const session = {
-          token: response.token,
-          user,
-        }
-
-        saveAuthSession(session)
-
-        this.token = response.token
+        if (version !== sessionVersion) return null
+        const role = normalizeRole(response?.roleTier)
+        if (!WEB_ROLES.includes(role)) throw new Error(role === 'DRIVER'
+          ? 'Las cuentas de conductor deben ingresar desde la aplicación móvil de RutaSegura.'
+          : 'Tu cuenta no tiene un perfil habilitado para acceder a la plataforma web.')
+        if (!response?.id || !response?.token || isTokenExpired(response.token))
+          throw new Error('El servidor devolvió una sesión inválida o vencida.')
+        const user = accountUser(response)
+        saveAuthSession({ token: response.token, user })
         this.user = user
+        this.token = response.token
         this.initialized = true
-
         return user
       } catch (error) {
-        this.error = getErrorMessage(error)
-        throw error
-      } finally {
-        this.loading = false
-      }
-    },
-
-    async initialize() {
-      if (this.initialized) return
-
-      const session = readAuthSession()
-
-      if (!session?.token) {
-        this.initialized = true
-        return
-      }
-
-      this.loading = true
-      this.error = null
-
-      try {
-        const user = await getCurrentUser()
-        const role = normalizeRole(user?.roleTier)
-
-        if (!WEB_ROLES.includes(role)) {
+        if (version === sessionVersion) {
           clearAuthSession()
           this.user = null
           this.token = null
-          this.initialized = true
-          return
+          this.error = getErrorMessage(error)
         }
-
-        this.token = session.token
-        this.user = {
-          ...user,
-          roleTier: role,
-        }
-
-        saveAuthSession({
-          token: session.token,
-          user: this.user,
-        })
-
-        this.initialized = true
-      } catch (error) {
-        const status = error?.response?.status
-
-        this.user = null
-        this.token = null
-
-        if (status === 401 || status === 403) {
-          clearAuthSession()
-          this.initialized = true
-        } else {
-          this.error =
-            'No fue posible verificar tu sesión. Comprueba tu conexión.'
-          this.initialized = false
-        }
-      } finally {
-        this.loading = false
-      }
+        throw error
+      } finally { if (version === sessionVersion) this.loading = false }
     },
-
-    logout() {
-      clearAuthSession()
-
+    async initialize({ retry = false } = {}) {
+      if (this.token && isTokenExpired(this.token)) this.logout('expired')
+      if (this.initialized && !retry) return
+      if (restorePromise) return restorePromise
+      const session = readAuthSession()
+      if (!session || isTokenExpired(session.token)) { this.logout(session ? 'expired' : null); return }
+      const version = ++sessionVersion
+      this.verifying = true
+      this.error = null
+      this.restoreUnavailable = false
+      restorePromise = (async () => {
+        try {
+          const account = await getCurrentUser()
+          if (version !== sessionVersion || readAuthToken() !== session.token) return
+          const role = normalizeRole(account?.roleTier)
+          if (account?.id !== session.user.id || !WEB_ROLES.includes(role)) { this.logout('invalid'); return }
+          const user = accountUser(account)
+          saveAuthSession({ token: session.token, user })
+          this.user = user
+          this.token = session.token
+          this.sessionReason = null
+        } catch (error) {
+          if (version !== sessionVersion) return
+          if ([401, 403].includes(error?.response?.status)) this.logout('expired')
+          else {
+            // Preserve the stored credential for an explicit retry; never expose unverified protected views.
+            this.user = null
+            this.token = null
+            this.restoreUnavailable = true
+            this.error = 'No pudimos verificar tu sesión. Revisa tu conexión y vuelve a intentarlo.'
+          }
+        } finally {
+          if (version === sessionVersion) { this.initialized = true; this.verifying = false }
+        }
+      })()
+      try { await restorePromise } finally { restorePromise = null }
+    },
+    logout(reason = null) {
+      sessionVersion++
+      clearAuthSession(reason)
       this.user = null
       this.token = null
+      this.loading = false
+      this.verifying = false
       this.error = null
+      this.notice = null
+      this.restoreUnavailable = false
+      this.sessionReason = reason
       this.initialized = true
     },
-
-    clearError() {
-      this.error = null
-    },
+    clearError() { this.error = null },
   },
 })

@@ -19,6 +19,8 @@ import {
   Smartphone,
 } from 'lucide-vue-next'
 
+import AppFeedback from '@/shared/components/AppFeedback.vue'
+
 import { signUp } from '@/modules/auth/services/authService'
 
 const router = useRouter()
@@ -148,7 +150,7 @@ async function submit() {
 </script>
 
 <template>
-  <main class="register-page grid min-h-dvh bg-slate-50 text-slate-900 selection:bg-blue-600 selection:text-white lg:h-dvh lg:grid-cols-12 lg:overflow-hidden">
+  <main id="main-content" tabindex="-1" class="register-page grid min-h-dvh bg-slate-50 text-slate-900 selection:bg-blue-600 selection:text-white lg:h-dvh lg:grid-cols-12 lg:overflow-hidden">
 
     <!-- ───────── LEFT PANEL: FAMILY ECOSYSTEM DIORAMA ───────── -->
     <aside class="brand-panel relative hidden flex-col justify-between overflow-hidden border-r border-slate-800/80 bg-slate-950 text-white lg:col-span-6 lg:flex lg:h-dvh xl:col-span-7">
@@ -160,7 +162,7 @@ async function submit() {
       <!-- Brand Header -->
       <div class="reveal relative z-10 flex shrink-0 items-center justify-between" style="--d: 0ms">
         <div class="flex items-center gap-3">
-          <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-blue-700 text-white shadow-lg shadow-blue-500/25 ring-1 ring-white/20">
+          <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-brand-navy to-brand-navy-light text-white shadow-lg shadow-blue-500/25 ring-1 ring-white/20">
             <BusFront :size="21" aria-hidden="true" />
           </div>
           <div>
@@ -186,7 +188,7 @@ async function submit() {
 
         <h1 class="brand-title reveal font-bold tracking-tight" style="--d: 160ms">
           Empieza a acompañar cada
-          <span class="bg-gradient-to-r from-amber-300 via-emerald-300 to-blue-400 bg-clip-text text-transparent">
+          <span class="bg-gradient-to-r from-amber-300 via-brand-yellow to-brand-navy-light bg-clip-text text-transparent">
             viaje de tu familia.
           </span>
         </h1>
@@ -618,7 +620,7 @@ async function submit() {
         <div class="auth-card relative overflow-hidden rounded-3xl border border-slate-200/90 bg-white/95 shadow-[0_24px_60px_-15px_rgba(15,23,42,0.09)] ring-1 ring-slate-900/[0.04] backdrop-blur-xl">
 
           <!-- Top Accent Gradient Bar on Card -->
-          <div class="h-1.5 w-full bg-gradient-to-r from-blue-600 via-sky-400 to-emerald-400"></div>
+          <div class="h-1.5 w-full bg-gradient-to-r from-brand-navy via-brand-yellow to-brand-navy-light"></div>
 
           <div class="auth-card-body">
             <!-- Top Navigation Row -->
@@ -648,17 +650,7 @@ async function submit() {
               </p>
             </header>
 
-            <!-- Error Banner with Shake Animation -->
-            <div
-              v-if="error"
-              :key="errorKey"
-              role="alert"
-              aria-live="assertive"
-              class="shake mt-3.5 flex items-start gap-2.5 rounded-xl border border-red-200 bg-red-50/90 px-3.5 py-2.5 text-xs text-red-800 shadow-xs sm:text-sm"
-            >
-              <TriangleAlert :size="17" class="mt-0.5 shrink-0 text-red-600" aria-hidden="true" />
-              <span class="leading-snug">{{ error }}</span>
-            </div>
+            <AppFeedback v-if="error" :key="errorKey" class="mt-3.5" kind="error" :message="error" />
 
             <form
               class="auth-form"
@@ -924,7 +916,7 @@ async function submit() {
   padding: clamp(18px, 3.2dvh, 44px) clamp(24px, 3.5vw, 56px);
   background-image:
     radial-gradient(rgba(255, 255, 255, 0.06) 1px, transparent 1px),
-    linear-gradient(to bottom right, #020617, #0f172a 60%, #09152b);
+    linear-gradient(to bottom right, var(--rs-navy), var(--rs-navy-light) 60%, var(--rs-navy));
   background-size: 28px 28px, 100% 100%;
 }
 
@@ -964,11 +956,8 @@ async function submit() {
 
 .form-panel {
   padding: clamp(12px, 2.2dvh, 28px) clamp(18px, 2.8vw, 40px);
-  background-color: #f8fafc;
-  background-image:
-    radial-gradient(#cbd5e1 1px, transparent 1px),
-    linear-gradient(135deg, rgba(241, 245, 249, 0.85) 0%, rgba(255, 255, 255, 0.95) 50%, rgba(240, 253, 244, 0.5) 100%);
-  background-size: 24px 24px, 100% 100%;
+  background-color: var(--rs-background);
+  background-image: none;
   box-shadow: inset 12px 0 24px -12px rgba(15, 23, 42, 0.06);
 }
 

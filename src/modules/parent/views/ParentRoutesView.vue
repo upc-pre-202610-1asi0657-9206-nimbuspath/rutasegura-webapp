@@ -1,4 +1,5 @@
 <script setup>
+import AppFeedback from '@/shared/components/AppFeedback.vue'
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import {
@@ -65,7 +66,6 @@ async function loadRoutes() {
     const data = await getMyStudents()
     students.value = Array.isArray(data) ? data : []
   } catch (err) {
-    console.error(err)
 
     error.value =
       err?.response?.data?.detail ||
@@ -206,56 +206,10 @@ onMounted(loadRoutes)
     </section>
 
     <!-- ───────── ERROR BANNER ───────── -->
-    <div
-      v-if="error"
-      role="alert"
-      class="shake mt-6 flex items-start justify-between gap-4 rounded-2xl border border-red-200 bg-red-50/90 p-4 shadow-xs"
-    >
-      <div class="flex gap-3">
-        <TriangleAlert :size="19" class="mt-0.5 shrink-0 text-red-600" />
-        <div>
-          <p class="text-sm font-semibold text-red-800">No pudimos cargar tus rutas</p>
-          <p class="mt-0.5 text-sm text-red-700">{{ error }}</p>
-        </div>
-      </div>
-
-      <button
-        type="button"
-        class="inline-flex shrink-0 items-center gap-1.5 rounded-xl border border-red-200 bg-white px-3 py-1.5 text-xs font-semibold text-red-700 transition hover:bg-red-100"
-        @click="loadRoutes"
-      >
-        <RefreshCcw :size="14" />
-        Reintentar
-      </button>
-    </div>
+    <AppFeedback v-if="error" class="mt-6" kind="error" :message="error" retry-label="Volver a intentar" @retry="loadRoutes" />
 
     <!-- ───────── LOADING SKELETONS ───────── -->
-    <div
-      v-if="loading"
-      class="mt-7 grid gap-5 lg:grid-cols-2"
-    >
-      <div
-        v-for="index in 2"
-        :key="index"
-        class="h-64 animate-pulse rounded-3xl border border-slate-200/80 bg-white p-6 shadow-xs"
-      >
-        <div class="flex items-center justify-between">
-          <div class="flex items-center gap-3.5">
-            <div class="h-12 w-12 rounded-2xl bg-slate-100"></div>
-            <div class="space-y-2">
-              <div class="h-4 w-40 rounded bg-slate-100"></div>
-              <div class="h-3 w-28 rounded bg-slate-100"></div>
-            </div>
-          </div>
-          <div class="h-6 w-16 rounded-full bg-slate-100"></div>
-        </div>
-        <div class="mt-6 grid grid-cols-2 gap-3">
-          <div class="h-20 rounded-2xl bg-slate-100"></div>
-          <div class="h-20 rounded-2xl bg-slate-100"></div>
-        </div>
-        <div class="mt-4 h-16 rounded-2xl bg-slate-100"></div>
-      </div>
-    </div>
+    <AppFeedback v-if="loading" class="mt-6" kind="loading" message="Cargando información…" />
 
     <!-- ───────── EMPTY STATE ───────── -->
     <section
@@ -263,7 +217,7 @@ onMounted(loadRoutes)
       class="reveal mt-7 relative overflow-hidden rounded-3xl border border-slate-200/90 bg-white px-6 py-14 text-center shadow-xs"
       style="--d: 100ms"
     >
-      <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-50 to-emerald-50 text-blue-600 ring-1 ring-blue-500/15">
+      <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-50 to-blue-100 text-blue-600 ring-1 ring-blue-500/15">
         <Route :size="28" />
       </div>
 
@@ -301,7 +255,7 @@ onMounted(loadRoutes)
           class="h-1.5 w-full bg-gradient-to-r"
           :class="
             isRouteActive(route.status)
-              ? 'from-emerald-500 via-teal-400 to-sky-400'
+              ? 'from-emerald-500 via-teal-400 to-brand-navy-light'
               : 'from-slate-400 to-slate-300'
           "
         ></div>
@@ -312,7 +266,7 @@ onMounted(loadRoutes)
             <div class="flex items-start justify-between gap-4">
               <div class="flex min-w-0 items-center gap-3.5">
                 <div
-                  class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-600 to-blue-800 text-white shadow-md shadow-blue-600/20"
+                  class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-brand-navy to-brand-navy-light text-white shadow-md shadow-blue-600/20"
                 >
                   <BusFront :size="21" />
                 </div>
@@ -428,7 +382,7 @@ onMounted(loadRoutes)
 .hero-banner {
   background-image:
     radial-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
-    linear-gradient(to bottom right, #020617, #0f172a 60%, #09152b);
+    linear-gradient(to bottom right, var(--rs-navy), var(--rs-navy-light) 60%, var(--rs-navy));
   background-size: 26px 26px, 100% 100%;
 }
 

@@ -1,4 +1,5 @@
 <script setup>
+import AppFeedback from '@/shared/components/AppFeedback.vue'
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import {
@@ -80,7 +81,6 @@ async function loadDashboard() {
     profile.value = profileData
     students.value = Array.isArray(studentsData) ? studentsData : []
   } catch (err) {
-    console.error(err)
 
     error.value =
       err?.response?.data?.detail ||
@@ -147,7 +147,7 @@ onMounted(loadDashboard)
 
           <h2 class="mt-3.5 text-2xl font-bold tracking-tight text-white sm:text-3xl lg:text-[32px]">
             Hola,
-            <span class="bg-gradient-to-r from-amber-300 via-emerald-300 to-sky-400 bg-clip-text text-transparent">
+            <span class="bg-gradient-to-r from-amber-300 via-brand-yellow to-brand-navy-light bg-clip-text text-transparent">
               {{ firstName }}.
             </span>
           </h2>
@@ -193,56 +193,10 @@ onMounted(loadDashboard)
     </section>
 
     <!-- ───────── ERROR BANNER ───────── -->
-    <div
-      v-if="error"
-      role="alert"
-      class="reveal mt-6 flex items-start justify-between gap-4 rounded-2xl border border-red-200 bg-red-50/90 p-4 shadow-xs"
-      style="--d: 60ms"
-    >
-      <div class="flex gap-3">
-        <TriangleAlert
-          :size="19"
-          class="mt-0.5 shrink-0 text-red-600"
-        />
-        <div>
-          <p class="text-sm font-semibold text-red-800">
-            No pudimos cargar el portal
-          </p>
-          <p class="mt-0.5 text-sm text-red-700">
-            {{ error }}
-          </p>
-        </div>
-      </div>
-
-      <button
-        type="button"
-        class="inline-flex shrink-0 items-center gap-1.5 rounded-xl border border-red-200 bg-white px-3 py-1.5 text-xs font-semibold text-red-700 shadow-2xs transition hover:bg-red-100"
-        @click="loadDashboard"
-      >
-        <RefreshCcw :size="14" />
-        Reintentar
-      </button>
-    </div>
+    <AppFeedback v-if="error" class="mt-6" kind="error" :message="error" retry-label="Volver a intentar" @retry="loadDashboard" />
 
     <!-- ───────── LOADING SKELETONS ───────── -->
-    <div v-if="loading" class="mt-7 space-y-7">
-      <div class="grid gap-4 sm:grid-cols-3">
-        <div
-          v-for="index in 3"
-          :key="index"
-          class="h-36 animate-pulse rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xs"
-        >
-          <div class="flex items-center justify-between">
-            <div class="h-11 w-11 rounded-xl bg-slate-100"></div>
-            <div class="h-7 w-10 rounded-lg bg-slate-100"></div>
-          </div>
-          <div class="mt-5 h-4 w-32 rounded bg-slate-100"></div>
-          <div class="mt-2 h-3 w-44 rounded bg-slate-100"></div>
-        </div>
-      </div>
-
-      <div class="h-64 animate-pulse rounded-3xl border border-slate-200/80 bg-white p-6 shadow-xs"></div>
-    </div>
+    <AppFeedback v-if="loading" class="mt-6" kind="loading" message="Cargando información…" />
 
     <!-- ───────── LOADED DASHBOARD CONTENT ───────── -->
     <template v-else>
@@ -254,7 +208,7 @@ onMounted(loadDashboard)
           class="group relative cursor-pointer overflow-hidden rounded-2xl border border-slate-200/90 bg-white p-5 shadow-xs ring-1 ring-slate-900/[0.02] transition-all duration-200 hover:-translate-y-0.5 hover:border-blue-300 hover:shadow-md"
           @click="router.push({ name: 'parent-students' })"
         >
-          <div class="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-blue-600 to-sky-400"></div>
+          <div class="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-brand-navy to-brand-navy-light"></div>
 
           <div class="flex items-center justify-between">
             <div class="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-50 text-blue-600 ring-1 ring-blue-500/15 transition-colors group-hover:bg-blue-600 group-hover:text-white">
@@ -318,7 +272,7 @@ onMounted(loadDashboard)
         >
           <div
             class="absolute inset-x-0 top-0 h-1"
-            :class="profileComplete ? 'bg-gradient-to-r from-emerald-500 to-sky-400' : 'bg-gradient-to-r from-amber-400 to-orange-400'"
+            :class="profileComplete ? 'bg-gradient-to-r from-emerald-500 to-brand-navy-light' : 'bg-gradient-to-r from-amber-400 to-orange-400'"
           ></div>
 
           <div class="flex items-center justify-between">
@@ -395,7 +349,7 @@ onMounted(loadDashboard)
           v-if="students.length === 0"
           class="mt-5 relative overflow-hidden rounded-3xl border border-slate-200/90 bg-white px-6 py-12 text-center shadow-xs"
         >
-          <div class="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-50 to-emerald-50 text-blue-600 ring-1 ring-blue-500/15">
+          <div class="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-50 to-blue-100 text-blue-600 ring-1 ring-blue-500/15">
             <Users :size="24" />
           </div>
 
@@ -428,14 +382,14 @@ onMounted(loadDashboard)
             class="group relative overflow-hidden rounded-3xl border border-slate-200/90 bg-white shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:border-blue-300/80 hover:shadow-lg"
           >
             <!-- Top Accent Strip -->
-            <div class="h-1.5 w-full bg-gradient-to-r from-blue-600 via-sky-400 to-emerald-400"></div>
+            <div class="h-1.5 w-full bg-gradient-to-r from-brand-navy via-brand-yellow to-brand-navy-light"></div>
 
             <div class="p-5 sm:p-6">
               <!-- Student Header -->
               <div class="flex items-start justify-between gap-4">
                 <div class="flex min-w-0 items-center gap-3.5">
                   <div
-                    class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-600 to-blue-800 text-sm font-bold text-white shadow-md shadow-blue-600/20"
+                    class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-brand-navy to-brand-navy-light text-sm font-bold text-white shadow-md shadow-blue-600/20"
                   >
                     {{ getStudentInitials(student.fullName) }}
                   </div>
@@ -556,7 +510,7 @@ onMounted(loadDashboard)
 .hero-banner {
   background-image:
     radial-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
-    linear-gradient(to bottom right, #020617, #0f172a 60%, #09152b);
+    linear-gradient(to bottom right, var(--rs-navy), var(--rs-navy-light) 60%, var(--rs-navy));
   background-size: 26px 26px, 100% 100%;
 }
 

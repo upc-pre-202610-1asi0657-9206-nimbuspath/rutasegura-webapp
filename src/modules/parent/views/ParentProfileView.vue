@@ -1,4 +1,5 @@
 <script setup>
+import AppFeedback from '@/shared/components/AppFeedback.vue'
 import { computed, onMounted, reactive, ref } from 'vue'
 import {
   TriangleAlert,
@@ -65,7 +66,6 @@ async function loadProfile() {
     form.phoneNumber = profile?.phoneNumber || ''
     form.documentNumber = profile?.documentNumber || ''
   } catch (err) {
-    console.error(err)
 
     error.value =
       err?.response?.data?.detail ||
@@ -99,7 +99,6 @@ async function saveProfile() {
 
     success.value = 'Perfil actualizado correctamente.'
   } catch (err) {
-    console.error(err)
 
     error.value =
       err?.response?.data?.detail ||
@@ -246,32 +245,7 @@ onMounted(loadProfile)
     </section>
 
     <!-- ───────── ERROR BANNER ───────── -->
-    <div
-      v-if="error"
-      :key="errorKey"
-      role="alert"
-      class="shake mt-6 flex items-start justify-between gap-4 rounded-2xl border border-red-200 bg-red-50/90 p-4 shadow-xs"
-    >
-      <div class="flex gap-3">
-        <TriangleAlert
-          :size="19"
-          class="mt-0.5 shrink-0 text-red-600"
-        />
-        <div>
-          <p class="text-sm font-semibold text-red-800">Revisa los datos ingresados</p>
-          <p class="mt-0.5 text-sm text-red-700">{{ error }}</p>
-        </div>
-      </div>
-
-      <button
-        type="button"
-        class="rounded-lg p-1 text-red-500 transition hover:bg-red-100 hover:text-red-700"
-        aria-label="Cerrar alerta"
-        @click="error = ''"
-      >
-        ✕
-      </button>
-    </div>
+    <AppFeedback v-if="error" class="mt-6" kind="error" :message="error" retry-label="Volver a intentar" @retry="loadProfile" />
 
     <!-- ───────── SUCCESS BANNER ───────── -->
     <Transition name="fade-slide">
@@ -304,11 +278,11 @@ onMounted(loadProfile)
 
       <!-- Left Card: Account Identity Summary (5 Cols) -->
       <aside class="overflow-hidden rounded-3xl border border-slate-200/90 bg-white shadow-xs ring-1 ring-slate-900/[0.02] lg:col-span-5">
-        <div class="h-1.5 w-full bg-gradient-to-r from-blue-600 to-indigo-600"></div>
+        <div class="h-1.5 w-full bg-gradient-to-r from-brand-navy to-brand-navy-light"></div>
 
         <div class="p-6">
           <div class="flex items-center gap-4">
-            <div class="flex h-15 w-15 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-700 text-lg font-extrabold text-white shadow-md shadow-blue-600/20">
+            <div class="flex h-15 w-15 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-brand-navy to-brand-navy-light text-lg font-extrabold text-white shadow-md shadow-blue-600/20">
               {{ userInitials }}
             </div>
 
@@ -357,7 +331,7 @@ onMounted(loadProfile)
 
       <!-- Right Card: Editable Contact Form (7 Cols) -->
       <section class="overflow-hidden rounded-3xl border border-slate-200/90 bg-white shadow-xs ring-1 ring-slate-900/[0.02] lg:col-span-7">
-        <div class="h-1.5 w-full bg-gradient-to-r from-blue-600 via-sky-400 to-emerald-400"></div>
+        <div class="h-1.5 w-full bg-gradient-to-r from-brand-navy via-brand-yellow to-brand-navy-light"></div>
 
         <div class="p-6 sm:p-8">
           <div class="border-b border-slate-100 pb-4">
@@ -370,19 +344,7 @@ onMounted(loadProfile)
           </div>
 
           <!-- Loading Skeletons -->
-          <div v-if="loading" class="mt-6 space-y-5">
-            <div>
-              <div class="h-3.5 w-36 animate-pulse rounded bg-slate-100"></div>
-              <div class="mt-2 h-12 animate-pulse rounded-xl bg-slate-100"></div>
-            </div>
-            <div>
-              <div class="h-3.5 w-40 animate-pulse rounded bg-slate-100"></div>
-              <div class="mt-2 h-12 animate-pulse rounded-xl bg-slate-100"></div>
-            </div>
-            <div class="flex justify-end pt-2">
-              <div class="h-11 w-40 animate-pulse rounded-xl bg-slate-100"></div>
-            </div>
-          </div>
+          <AppFeedback v-if="loading" class="mt-6" kind="loading" message="Cargando información…" />
 
           <!-- Form -->
           <form
@@ -489,7 +451,7 @@ onMounted(loadProfile)
 .hero-banner {
   background-image:
     radial-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
-    linear-gradient(to bottom right, #020617, #0f172a 60%, #09152b);
+    linear-gradient(to bottom right, var(--rs-navy), var(--rs-navy-light) 60%, var(--rs-navy));
   background-size: 26px 26px, 100% 100%;
 }
 

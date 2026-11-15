@@ -1,4 +1,5 @@
 <script setup>
+import AppFeedback from '@/shared/components/AppFeedback.vue'
 import {
   computed,
   onMounted,
@@ -169,12 +170,12 @@ function statusClasses(status) {
 
 function topStripClass(status) {
   if (status === 'ACTIVE') {
-    return 'from-emerald-500 via-teal-400 to-sky-400'
+    return 'from-emerald-500 via-teal-400 to-brand-navy-light'
   }
   if (status === 'INACTIVE') {
     return 'from-slate-400 to-slate-300'
   }
-  return 'from-amber-400 via-orange-400 to-blue-500'
+  return 'from-amber-400 via-orange-400 to-brand-navy-light'
 }
 
 function directionLabel(direction) {
@@ -243,7 +244,7 @@ async function loadRoutes() {
     drivers.value = Array.isArray(driverData) ? driverData : []
     vehicles.value = Array.isArray(vehicleData) ? vehicleData : []
   } catch (err) {
-    console.error(err)
+
     error.value = backendErrorMessage(
       err,
       'No fue posible cargar las rutas.'
@@ -314,7 +315,7 @@ async function submitRoute() {
 
     await loadRoutes()
   } catch (err) {
-    console.error(err)
+
     createError.value = backendErrorMessage(
       err,
       'No fue posible crear la ruta.'
@@ -369,7 +370,7 @@ async function submitAssignment() {
 
     await loadRoutes()
   } catch (err) {
-    console.error(err)
+
     assignmentError.value = backendErrorMessage(
       err,
       'No fue posible asignar los recursos.'
@@ -392,7 +393,7 @@ async function handleActivate(routeItem) {
     await activateRoute(routeItem.id)
     await loadRoutes()
   } catch (err) {
-    console.error(err)
+
     actionError.value = backendErrorMessage(
       err,
       'No fue posible activar la ruta.'
@@ -419,7 +420,7 @@ async function copyEnrollmentCode(code) {
       }
     }, 1800)
   } catch (err) {
-    console.error(err)
+
   }
 }
 
@@ -552,7 +553,7 @@ onMounted(loadRoutes)
         <div class="flex shrink-0 items-center gap-2.5 pt-2 lg:pt-8">
           <button
             type="button"
-            class="group inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-blue-500 px-5 py-3 text-xs font-bold text-white shadow-lg shadow-blue-600/25 ring-1 ring-white/20 transition-all duration-200 hover:-translate-y-0.5 hover:from-blue-500 hover:to-blue-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-400 sm:text-sm"
+            class="group inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-brand-navy to-brand-navy-light px-5 py-3 text-xs font-bold text-white shadow-lg shadow-blue-600/25 ring-1 ring-white/20 transition-all duration-200 hover:-translate-y-0.5 hover:from-brand-navy hover:to-brand-navy-light focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-400 sm:text-sm"
             @click="openCreateModal"
           >
             <Plus :size="17" class="transition-transform duration-200 group-hover:rotate-90" />
@@ -581,7 +582,7 @@ onMounted(loadRoutes)
     >
       <div class="flex flex-col justify-between gap-5 p-5 sm:flex-row sm:items-center lg:px-7 lg:py-5">
         <div class="flex items-start gap-4 sm:items-center">
-          <div class="flex h-13 w-13 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-50 to-indigo-50 text-blue-600 ring-1 ring-blue-500/15">
+          <div class="flex h-13 w-13 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-50 to-blue-100 text-blue-600 ring-1 ring-blue-500/15">
             <Route :size="24" />
           </div>
 
@@ -623,7 +624,7 @@ onMounted(loadRoutes)
 
       <div class="h-1.5 w-full bg-slate-100">
         <div
-          class="h-full bg-gradient-to-r from-blue-600 via-sky-400 to-emerald-400 transition-all duration-500"
+          class="h-full bg-gradient-to-r from-brand-navy via-brand-yellow to-brand-navy-light transition-all duration-500"
           :style="{ width: `${quotaPercentage}%` }"
         />
       </div>
@@ -733,32 +734,7 @@ onMounted(loadRoutes)
     </div>
 
     <!-- ───────── LOADING SKELETONS ───────── -->
-    <div
-      v-if="loading"
-      class="mt-7 grid gap-5 xl:grid-cols-2"
-    >
-      <div
-        v-for="index in 4"
-        :key="index"
-        class="h-96 animate-pulse rounded-3xl border border-slate-200/80 bg-white p-6 shadow-xs"
-      >
-        <div class="flex items-center justify-between">
-          <div class="flex items-center gap-3.5">
-            <div class="h-12 w-12 rounded-2xl bg-slate-100"></div>
-            <div class="space-y-2">
-              <div class="h-4 w-40 rounded bg-slate-100"></div>
-              <div class="h-3 w-24 rounded bg-slate-100"></div>
-            </div>
-          </div>
-          <div class="h-6 w-20 rounded-full bg-slate-100"></div>
-        </div>
-        <div class="mt-6 grid grid-cols-2 gap-3">
-          <div class="h-20 rounded-2xl bg-slate-100"></div>
-          <div class="h-20 rounded-2xl bg-slate-100"></div>
-        </div>
-        <div class="mt-4 h-32 rounded-2xl bg-slate-100"></div>
-      </div>
-    </div>
+    <AppFeedback v-if="loading" class="mt-6" kind="loading" message="Cargando información…" />
 
     <!-- ───────── EMPTY STATE ───────── -->
     <section
@@ -766,7 +742,7 @@ onMounted(loadRoutes)
       class="reveal mt-7 relative overflow-hidden rounded-3xl border border-slate-200/90 bg-white px-6 py-16 text-center shadow-xs"
       style="--d: 140ms"
     >
-      <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-50 to-indigo-50 text-blue-600 ring-1 ring-blue-500/15">
+      <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-50 to-blue-100 text-blue-600 ring-1 ring-blue-500/15">
         <BusFront :size="28" />
       </div>
 
@@ -811,7 +787,7 @@ onMounted(loadRoutes)
             <div class="flex items-start justify-between gap-4">
               <div class="flex min-w-0 items-center gap-3.5">
                 <div
-                  class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-700 text-white shadow-md shadow-blue-600/20"
+                  class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-brand-navy to-brand-navy-light text-white shadow-md shadow-blue-600/20"
                 >
                   <BusFront :size="21" />
                 </div>
@@ -1065,7 +1041,7 @@ onMounted(loadRoutes)
       >
         <div class="modal-card relative w-full max-w-lg overflow-hidden rounded-3xl border border-slate-200/90 bg-white shadow-2xl">
           <!-- Top Gradient Accent Strip -->
-          <div class="h-1.5 w-full bg-gradient-to-r from-blue-600 via-sky-400 to-emerald-400"></div>
+          <div class="h-1.5 w-full bg-gradient-to-r from-brand-navy via-brand-yellow to-brand-navy-light"></div>
 
           <!-- Modal Header -->
           <div class="flex items-start justify-between border-b border-slate-100 px-6 py-4 sm:px-7">
@@ -1218,7 +1194,7 @@ onMounted(loadRoutes)
         @click.self="closeCreateModal"
       >
         <div class="modal-card relative max-h-[92dvh] w-full max-w-2xl overflow-hidden rounded-3xl border border-slate-200/90 bg-white shadow-2xl">
-          <div class="h-1.5 w-full bg-gradient-to-r from-blue-600 via-sky-400 to-emerald-400"></div>
+          <div class="h-1.5 w-full bg-gradient-to-r from-brand-navy via-brand-yellow to-brand-navy-light"></div>
 
           <div class="flex items-start justify-between border-b border-slate-100 px-6 py-4 sm:px-7">
             <div class="flex items-center gap-3">
@@ -1387,7 +1363,7 @@ onMounted(loadRoutes)
                   v-for="day in days"
                   :key="day.value"
                   type="button"
-                  class="flex items-center justify-center rounded-xl border py-2.5 text-xs font-bold transition-all"
+                  class="rs-button-primary flex items-center justify-center rounded-xl border py-2.5 text-xs font-bold transition-all"
                   :class="
                     form.operatingDays.includes(day.value)
                       ? 'border-blue-600 bg-blue-600 text-white shadow-xs'
@@ -1453,7 +1429,7 @@ onMounted(loadRoutes)
 .hero-banner {
   background-image:
     radial-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
-    linear-gradient(to bottom right, #020617, #0f172a 60%, #09152b);
+    linear-gradient(to bottom right, var(--rs-navy), var(--rs-navy-light) 60%, var(--rs-navy));
   background-size: 26px 26px, 100% 100%;
 }
 

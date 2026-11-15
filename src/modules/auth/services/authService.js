@@ -19,7 +19,7 @@ export async function signIn(credentials) {
   const { data } = await apiClient.post('/users/sign-in', {
     email: credentials.email.trim(),
     password: credentials.password,
-  })
+  }, { skipSession: true })
 
   return data
 }
@@ -41,7 +41,7 @@ export async function signUp(payload) {
     password: payload.password,
     roleTier: 'PARENT',
     organizationId: null,
-  })
+  }, { skipSession: true })
 
   return data
 }

@@ -1,4 +1,5 @@
 <script setup>
+import AppFeedback from '@/shared/components/AppFeedback.vue'
 import {
   computed,
   onMounted,
@@ -163,7 +164,7 @@ async function loadData() {
     drivers.value = Array.isArray(driverData) ? driverData : []
     vehicles.value = Array.isArray(vehicleData) ? vehicleData : []
   } catch (err) {
-    console.error(err)
+
     error.value = backendError(
       err,
       'No fue posible cargar los recursos operativos.'
@@ -216,7 +217,7 @@ async function submitDriver() {
     driverModal.value = false
     await loadData()
   } catch (err) {
-    console.error(err)
+
     formError.value = backendError(
       err,
       'No fue posible registrar al conductor.'
@@ -237,7 +238,7 @@ async function handleVerify(driver) {
     await verifyDriver(driver.id)
     await loadData()
   } catch (err) {
-    console.error(err)
+
     error.value = backendError(
       err,
       'No fue posible verificar al conductor.'
@@ -268,7 +269,7 @@ async function submitVehicle() {
 
     await loadData()
   } catch (err) {
-    console.error(err)
+
     formError.value = backendError(
       err,
       'No fue posible registrar el vehículo.'
@@ -393,7 +394,7 @@ onMounted(loadData)
         <div class="flex shrink-0 items-center gap-2.5 pt-2 lg:pt-8">
           <button
             type="button"
-            class="group inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-blue-500 px-5 py-3 text-xs font-bold text-white shadow-lg shadow-blue-600/25 ring-1 ring-white/20 transition-all duration-200 hover:-translate-y-0.5 hover:from-blue-500 hover:to-blue-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-400 sm:text-sm"
+            class="group inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-brand-navy to-brand-navy-light px-5 py-3 text-xs font-bold text-white shadow-lg shadow-blue-600/25 ring-1 ring-white/20 transition-all duration-200 hover:-translate-y-0.5 hover:from-brand-navy hover:to-brand-navy-light focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-400 sm:text-sm"
             @click="openVehicleModal"
           >
             <Plus :size="17" class="transition-transform duration-200 group-hover:rotate-90" />
@@ -415,43 +416,10 @@ onMounted(loadData)
     </section>
 
     <!-- ───────── ERROR BANNER ───────── -->
-    <div
-      v-if="error"
-      role="alert"
-      class="shake mt-6 flex items-start justify-between gap-4 rounded-2xl border border-red-200 bg-red-50/90 p-4 shadow-xs"
-    >
-      <div class="flex gap-3">
-        <TriangleAlert :size="19" class="mt-0.5 shrink-0 text-red-600" />
-        <div>
-          <p class="text-sm font-semibold text-red-800">No pudimos procesar la solicitud</p>
-          <p class="mt-0.5 text-sm text-red-700">{{ error }}</p>
-        </div>
-      </div>
-
-      <button
-        type="button"
-        class="inline-flex shrink-0 items-center gap-1.5 rounded-xl border border-red-200 bg-white px-3 py-1.5 text-xs font-semibold text-red-700 transition hover:bg-red-100"
-        @click="loadData"
-      >
-        <RefreshCcw :size="14" />
-        Reintentar
-      </button>
-    </div>
+    <AppFeedback v-if="error" class="mt-6" kind="error" :message="error" retry-label="Volver a intentar" @retry="loadData" />
 
     <!-- ───────── LOADING SKELETONS ───────── -->
-    <div v-if="loading" class="mt-7 space-y-6">
-      <div class="grid gap-4 sm:grid-cols-3">
-        <div
-          v-for="i in 3"
-          :key="i"
-          class="h-24 animate-pulse rounded-2xl border border-slate-200/80 bg-white p-5"
-        />
-      </div>
-      <div class="grid gap-6 xl:grid-cols-2">
-        <div class="h-96 animate-pulse rounded-3xl border border-slate-200/80 bg-white p-6" />
-        <div class="h-96 animate-pulse rounded-3xl border border-slate-200/80 bg-white p-6" />
-      </div>
-    </div>
+    <AppFeedback v-if="loading" class="mt-6" kind="loading" message="Cargando información…" />
 
     <!-- ───────── LOADED RESOURCES CONTENT ───────── -->
     <template v-else>
@@ -502,7 +470,7 @@ onMounted(loadData)
 
         <!-- COLUMN 1: DRIVERS & ONBOARDING -->
         <section class="overflow-hidden rounded-3xl border border-slate-200/90 bg-white shadow-xs ring-1 ring-slate-900/[0.02]">
-          <div class="h-1.5 w-full bg-gradient-to-r from-blue-600 via-sky-400 to-emerald-400"></div>
+          <div class="h-1.5 w-full bg-gradient-to-r from-brand-navy via-brand-yellow to-brand-navy-light"></div>
 
           <div class="p-5 sm:p-6">
             <div class="flex items-start justify-between gap-4 border-b border-slate-100 pb-4">
@@ -662,7 +630,7 @@ onMounted(loadData)
 
         <!-- COLUMN 2: VEHICLES FLEET -->
         <section class="overflow-hidden rounded-3xl border border-slate-200/90 bg-white shadow-xs ring-1 ring-slate-900/[0.02]">
-          <div class="h-1.5 w-full bg-gradient-to-r from-emerald-500 via-teal-400 to-sky-400"></div>
+          <div class="h-1.5 w-full bg-gradient-to-r from-emerald-500 via-teal-400 to-brand-navy-light"></div>
 
           <div class="p-5 sm:p-6">
             <div class="flex items-start justify-between gap-4 border-b border-slate-100 pb-4">
@@ -703,7 +671,7 @@ onMounted(loadData)
                 class="group flex items-center justify-between gap-4 rounded-2xl border border-slate-200/80 bg-slate-50/50 p-4 transition-all hover:border-slate-300 hover:bg-white hover:shadow-xs"
               >
                 <div class="flex min-w-0 items-center gap-3.5">
-                  <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-700 text-white shadow-sm shadow-blue-600/20">
+                  <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-brand-navy to-brand-navy-light text-white shadow-sm shadow-blue-600/20">
                     <BusFront :size="20" />
                   </div>
 
@@ -779,7 +747,7 @@ onMounted(loadData)
       >
         <div class="modal-card relative max-h-[92dvh] w-full max-w-xl overflow-hidden rounded-3xl border border-slate-200/90 bg-white shadow-2xl">
           <!-- Top Gradient Accent Strip -->
-          <div class="h-1.5 w-full bg-gradient-to-r from-blue-600 via-sky-400 to-emerald-400"></div>
+          <div class="h-1.5 w-full bg-gradient-to-r from-brand-navy via-brand-yellow to-brand-navy-light"></div>
 
           <!-- Modal Header -->
           <div class="flex items-start justify-between border-b border-slate-100 px-6 py-4 sm:px-7">
@@ -916,7 +884,7 @@ onMounted(loadData)
       >
         <div class="modal-card relative w-full max-w-lg overflow-hidden rounded-3xl border border-slate-200/90 bg-white shadow-2xl">
           <!-- Top Gradient Accent Strip -->
-          <div class="h-1.5 w-full bg-gradient-to-r from-emerald-500 via-teal-400 to-blue-600"></div>
+          <div class="h-1.5 w-full bg-gradient-to-r from-emerald-500 via-teal-400 to-brand-navy-light"></div>
 
           <!-- Modal Header -->
           <div class="flex items-start justify-between border-b border-slate-100 px-6 py-4 sm:px-7">
@@ -1039,7 +1007,7 @@ onMounted(loadData)
 .hero-banner {
   background-image:
     radial-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
-    linear-gradient(to bottom right, #020617, #0f172a 60%, #09152b);
+    linear-gradient(to bottom right, var(--rs-navy), var(--rs-navy-light) 60%, var(--rs-navy));
   background-size: 26px 26px, 100% 100%;
 }
 
@@ -1064,8 +1032,8 @@ onMounted(loadData)
   border: 1px solid #e2e8f0;
   border-radius: 12px;
   outline: none;
-  background: #f8fafc;
-  color: #0f172a;
+  background: var(--rs-background);
+  color: var(--rs-navy-light);
   font-size: 14px;
   transition: all 0.15s ease;
 }
@@ -1077,7 +1045,7 @@ onMounted(loadData)
 
 .field input:focus,
 .field select:focus {
-  border-color: #2563eb;
+  border-color: var(--rs-navy);
   background: #ffffff;
   box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.12);
 }

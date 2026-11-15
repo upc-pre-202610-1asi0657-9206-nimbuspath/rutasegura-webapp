@@ -15,6 +15,8 @@ import {
   X,
 } from 'lucide-vue-next'
 
+import { useModalFocus } from '@/shared/composables/useModalFocus'
+
 import { useAuthStore } from '@/modules/auth/stores/authStore'
 
 const auth = useAuthStore()
@@ -22,6 +24,8 @@ const router = useRouter()
 const currentRoute = useRoute()
 
 const mobileMenuOpen = ref(false)
+const drawerPanel = ref(null)
+useModalFocus(mobileMenuOpen, drawerPanel)
 
 const fullName = computed(() => {
   const name = `${auth.user?.firstName ?? ''} ${auth.user?.lastName ?? ''}`.trim()
@@ -92,7 +96,7 @@ async function logout() {
   <div class="parent-shell min-h-dvh bg-slate-50 text-slate-900 selection:bg-blue-600 selection:text-white">
 
     <!-- ───────── DESKTOP SIDEBAR (Fixed to viewport, zero scrollbar, never moves) ───────── -->
-    <aside class="sidebar hidden border-r border-slate-800/80 bg-slate-950 text-white lg:fixed lg:inset-y-0 lg:left-0 lg:z-40 lg:flex lg:w-[268px] lg:flex-col lg:justify-between lg:overflow-hidden">
+    <aside class="sidebar hidden border-r border-slate-800/80 bg-slate-950 text-white lg:fixed lg:inset-y-0 lg:left-0 lg:z-40 lg:flex lg:w-[268px] lg:flex-col lg:justify-between lg:overflow-y-auto">
 
       <!-- Ambient glowing orbs -->
       <div class="pointer-events-none absolute -left-20 -top-20 h-64 w-64 rounded-full bg-blue-600/20 blur-3xl"></div>
@@ -101,7 +105,7 @@ async function logout() {
       <!-- Top Brand Header & Navigation -->
       <div class="relative z-10 min-h-0">
         <div class="sidebar-brand flex items-center gap-3 px-2">
-          <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-blue-700 text-white shadow-lg shadow-blue-500/25 ring-1 ring-white/20">
+          <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-brand-navy to-brand-navy-light text-white shadow-lg shadow-blue-500/25 ring-1 ring-white/20">
             <BusFront :size="20" aria-hidden="true" />
           </div>
 
@@ -131,7 +135,7 @@ async function logout() {
             class="nav-item group relative flex items-center justify-between rounded-xl px-3 text-sm font-semibold text-slate-300 transition-all duration-200 hover:bg-white/[0.06] hover:text-white focus-visible:outline-2 focus-visible:outline-blue-500"
           >
             <span
-              class="active-bar absolute left-0 top-1/2 h-5 w-1 -translate-y-1/2 rounded-r-full bg-gradient-to-b from-sky-400 to-emerald-400 opacity-0 transition-opacity"
+              class="active-bar absolute left-0 top-1/2 h-5 w-1 -translate-y-1/2 rounded-r-full bg-gradient-to-b from-brand-navy to-brand-navy-light opacity-0 transition-opacity"
               aria-hidden="true"
             ></span>
 
@@ -160,7 +164,7 @@ async function logout() {
 
         <div class="rounded-2xl border border-white/10 bg-slate-900/85 p-2.5 shadow-xl backdrop-blur-md">
           <div class="flex items-center gap-2.5 pb-2.5">
-            <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500/20 to-emerald-500/20 text-xs font-bold text-sky-300 ring-1 ring-sky-400/30">
+            <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-brand-navy/20 to-brand-navy-light/20 text-xs font-bold text-sky-300 ring-1 ring-sky-400/30">
               {{ userInitials }}
             </div>
 
@@ -191,6 +195,7 @@ async function logout() {
       <div
         v-if="mobileMenuOpen"
         class="fixed inset-0 z-50 flex lg:hidden"
+        ref="drawerPanel"
         role="dialog"
         aria-modal="true"
         aria-label="Menú de navegación"
@@ -204,7 +209,7 @@ async function logout() {
           <div>
             <div class="flex items-center justify-between pb-6">
               <div class="flex items-center gap-2.5">
-                <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-blue-700 text-white shadow-md ring-1 ring-white/20">
+                <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-brand-navy to-brand-navy-light text-white shadow-md ring-1 ring-white/20">
                   <BusFront :size="19" aria-hidden="true" />
                 </div>
                 <div>
@@ -338,7 +343,7 @@ async function logout() {
       </header>
 
       <!-- Child Views Render Here (Natural document flow) -->
-      <main class="relative flex-1">
+      <main id="main-content" tabindex="-1" class="relative flex-1">
         <RouterView v-slot="{ Component }">
           <Transition name="page-reveal" mode="out-in">
             <component :is="Component" />
@@ -375,7 +380,7 @@ async function logout() {
   padding: clamp(14px, 2.2dvh, 22px) 16px;
   background-image:
     radial-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
-    linear-gradient(to bottom, #020617, #0f172a 65%, #09152b);
+    linear-gradient(to bottom, var(--rs-navy), var(--rs-navy-light) 65%, var(--rs-navy));
   background-size: 26px 26px, 100% 100%;
 }
 
@@ -393,7 +398,7 @@ async function logout() {
 }
 
 .content-area {
-  background-color: #f8fafc;
+  background-color: var(--rs-background);
 }
 
 /* =========================================
@@ -402,9 +407,9 @@ async function logout() {
 
 .nav-item.router-link-exact-active {
   color: #ffffff;
-  background: linear-gradient(135deg, rgba(37, 99, 235, 0.28), rgba(16, 185, 129, 0.14));
+  background: linear-gradient(135deg, rgba(242, 183, 5, 0.18), rgba(242, 183, 5, 0.1));
   box-shadow:
-    inset 0 0 0 1px rgba(56, 189, 248, 0.3),
+    inset 0 0 0 1px rgba(242, 183, 5, 0.4),
     0 10px 24px -8px rgba(2, 6, 23, 0.6);
 }
 
@@ -413,19 +418,19 @@ async function logout() {
 }
 
 .nav-item.router-link-exact-active .nav-icon-box {
-  background: linear-gradient(135deg, #2563eb, #0284c7);
+  background: linear-gradient(135deg, var(--rs-navy), var(--rs-navy-light));
   color: #ffffff;
-  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.35);
+  box-shadow: 0 4px 12px rgba(21, 36, 59, 0.25);
 }
 
 .nav-item.router-link-exact-active .nav-chevron {
   opacity: 1;
-  color: #38bdf8;
+  color: var(--rs-yellow);
 }
 
 .mobile-tab.router-link-exact-active {
-  color: #2563eb;
-  background-color: #eff6ff;
+  color: var(--rs-navy);
+  background-color: var(--rs-notice-bg);
 }
 
 /* =========================================

@@ -6,19 +6,19 @@ import {
 import { useAuthStore } from '@/modules/auth/stores/authStore'
 
 import LoginView from '@/modules/auth/views/LoginView.vue'
-import RegisterView from '@/modules/auth/views/RegisterView.vue'
+const RegisterView = () => import('@/modules/auth/views/RegisterView.vue')
 
-import ParentLayout from '@/modules/parent/layouts/ParentLayout.vue'
-import ParentHomeView from '@/modules/parent/views/ParentHomeView.vue'
-import ParentStudentsView from '@/modules/parent/views/ParentStudentsView.vue'
-import ParentRoutesView from '@/modules/parent/views/ParentRoutesView.vue'
-import ParentHistoryView from '@/modules/parent/views/ParentHistoryView.vue'
-import ParentProfileView from '@/modules/parent/views/ParentProfileView.vue'
+const ParentLayout = () => import('@/modules/parent/layouts/ParentLayout.vue')
+const ParentHomeView = () => import('@/modules/parent/views/ParentHomeView.vue')
+const ParentStudentsView = () => import('@/modules/parent/views/ParentStudentsView.vue')
+const ParentRoutesView = () => import('@/modules/parent/views/ParentRoutesView.vue')
+const ParentHistoryView = () => import('@/modules/parent/views/ParentHistoryView.vue')
+const ParentProfileView = () => import('@/modules/parent/views/ParentProfileView.vue')
 
-import AdminLayout from '@/modules/admin/layouts/AdminLayout.vue'
-import AdminRoutesView from '@/modules/admin/views/AdminRoutesView.vue'
-import AdminResourcesView from '@/modules/admin/views/AdminResourcesView.vue'
-import AdminTripsView from '@/modules/admin/views/AdminTripsView.vue'
+const AdminLayout = () => import('@/modules/admin/layouts/AdminLayout.vue')
+const AdminRoutesView = () => import('@/modules/admin/views/AdminRoutesView.vue')
+const AdminResourcesView = () => import('@/modules/admin/views/AdminResourcesView.vue')
+const AdminTripsView = () => import('@/modules/admin/views/AdminTripsView.vue')
 
 const routes = [
   {
