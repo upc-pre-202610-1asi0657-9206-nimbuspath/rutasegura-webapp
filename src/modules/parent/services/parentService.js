@@ -59,3 +59,14 @@ export async function updateParentProfile(payload) {
 
   return data
 }
+
+export async function getGuardianTrips(from, to) {
+  const { data } = await apiClient.get('/guardians/me/trips', {
+    params: {
+      from,
+      to,
+    },
+  })
+
+  return data
+}
