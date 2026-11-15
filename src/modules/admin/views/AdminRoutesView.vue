@@ -1,4 +1,6 @@
 <script setup>
+import RoutePlanEditor from '@/modules/admin/components/RoutePlanEditor.vue'
+import { useModalFocus } from '@/shared/composables/useModalFocus'
 import AppFeedback from '@/shared/components/AppFeedback.vue'
 import {
   computed,
@@ -40,6 +42,7 @@ import {
   getVehicles,
 } from '@/modules/admin/services/adminService'
 
+const editingRouteId = ref(null)
 const routes = ref([])
 const quota = ref(null)
 const drivers = ref([])
@@ -54,6 +57,8 @@ const creating = ref(false)
 const createError = ref('')
 const createErrorKey = ref(0)
 
+const createDialog = ref(null), assignmentDialog = ref(null)
+useModalFocus(showCreateModal, createDialog, () => !creating.value)
 const createdRoute = ref(null)
 const copiedCode = ref('')
 
@@ -71,6 +76,7 @@ const assigning = ref(false)
 const assignmentError = ref('')
 const assignmentErrorKey = ref(0)
 
+useModalFocus(showAssignmentModal, assignmentDialog, () => !assigning.value)
 const activatingRouteId = ref(null)
 
 // ============================================================
@@ -386,6 +392,7 @@ async function submitAssignment() {
 // ============================================================
 
 async function handleActivate(routeItem) {
+  if (activatingRouteId.value) return
   actionError.value = ''
   activatingRouteId.value = routeItem.id
 
@@ -420,7 +427,7 @@ async function copyEnrollmentCode(code) {
       }
     }, 1800)
   } catch (err) {
-
+    actionError.value = 'No se pudo copiar el código. Selecciónalo y cópialo manualmente.'
   }
 }
 
@@ -793,7 +800,7 @@ onMounted(loadRoutes)
                 </div>
 
                 <div class="min-w-0">
-                  <h2 class="truncate text-lg font-bold tracking-tight text-slate-900">
+                  <h2 class="text-lg font-bold tracking-tight text-slate-900" style="overflow-wrap: anywhere">
                     {{ routeItem.name }}
                   </h2>
 
@@ -811,6 +818,8 @@ onMounted(loadRoutes)
                 {{ statusLabel(routeItem.status) }}
               </span>
             </div>
+
+            <button type="button" class="rs-button-secondary mt-3" @click="editingRouteId = routeItem.id">Editar paradas y mapa</button>
 
             <!-- Metrics Grid: Horario & Estudiantes -->
             <div class="mt-5 grid gap-3 sm:grid-cols-2">
@@ -995,7 +1004,7 @@ onMounted(loadRoutes)
 
             <!-- 2. ACTIVAR RUTA BUTTON -->
             <button
-              v-else-if="routeItem.assignment && routeItem.status === 'DRAFT'"
+              v-else-if="routeItem.assignment && routeItem.status !== 'ACTIVE'"
               type="button"
               :disabled="activatingRouteId === routeItem.id"
               class="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-500 py-3 text-xs font-bold text-white shadow-md shadow-emerald-600/20 transition-all duration-200 hover:-translate-y-0.5 hover:from-emerald-500 hover:to-teal-600 disabled:cursor-not-allowed disabled:opacity-50 sm:text-sm"
@@ -1033,6 +1042,7 @@ onMounted(loadRoutes)
     <Transition name="modal-fade">
       <div
         v-if="showAssignmentModal"
+        ref="assignmentDialog"
         class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-xs"
         role="dialog"
         aria-modal="true"
@@ -1187,6 +1197,7 @@ onMounted(loadRoutes)
     <Transition name="modal-fade">
       <div
         v-if="showCreateModal"
+        ref="createDialog"
         class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-xs"
         role="dialog"
         aria-modal="true"
@@ -1421,6 +1432,8 @@ onMounted(loadRoutes)
         </div>
       </div>
     </Transition>
+
+    <RoutePlanEditor v-if="editingRouteId" :key="editingRouteId" :route-id="editingRouteId" @close="editingRouteId = null" @changed="loadRoutes" />
 
   </div>
 </template>

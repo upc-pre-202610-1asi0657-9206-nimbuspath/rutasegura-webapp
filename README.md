@@ -44,4 +44,23 @@ npm run test:auth
 
 La suite de Chromium arranca Vite en `127.0.0.1:4173` y usa respuestas HTTP controladas; no crea datos en AWS. Verifica acceso ADMIN/PARENT, rechazo DRIVER, restauración, expiración, 401/403, caída de IAM, logout, respuestas tardías, fuentes y accesibilidad básica. Si ya existe un Chromium compatible, se puede indicar su ejecutable con `PLAYWRIGHT_CHROMIUM_EXECUTABLE`.
 
-Estas pruebas verifican el cliente. No acreditan la integración real con Gateway, autorización entre empresas, vínculos tutor–alumno o el recorrido conjunto con la app. Los pendientes se mantienen en el registro compartido del Sprint 3; el backend y la app móvil no se modifican en esta entrega.
+Estas pruebas verifican el cliente de acceso y sesión. Para operaciones y familias, ver la entrega siguiente. No acreditan la integración real con Gateway, autorización entre empresas, vínculos tutor–alumno o el recorrido conjunto con la app. Los pendientes se mantienen en el registro compartido del Sprint 3; el backend y la app móvil no se modifican en esta entrega.
+
+## Configuración operativa y familias (entrega 3)
+
+ADMIN dispone de cuentas/perfiles de conductor, controles de flota, editor de paradas/mapa/itinerario, incorporación de tutores/alumnos y revisión de vínculos e inscripciones. PARENT dispone de recojo confirmado, foto privada y oferta/inscripción con perfil completo. Se conserva la identidad visual móvil.
+
+Recorrido, contratos, límites y aceptación pendiente: [Operación y familias](docs/OPERACION-Y-FAMILIAS.md).
+
+```powershell
+npm run build
+npm test
+# Suites por separado:
+npm run test:auth
+npm run test:operations
+# Alternativa si Chromium de Playwright no está instalado:
+$env:PLAYWRIGHT_CHROMIUM_EXECUTABLE = 'C:\Program Files\Google\Chrome\Application\chrome.exe'
+npm test
+```
+
+Las pruebas HTTP controladas no sustituyen el ensayo con Gateway/backend desplegado, MySQL/RabbitMQ, ORS real y la agenda móvil. No se modificó el backend ni se aplicaron migraciones como parte de esta entrega web.

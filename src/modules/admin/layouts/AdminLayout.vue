@@ -43,6 +43,7 @@ const userInitials = computed(() => {
 })
 
 const items = [
+  { label: 'Familias y alumnos', route: { name: 'admin-families' }, icon: Users },
   {
     label: 'Rutas escolares',
     route: {

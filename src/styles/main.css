@@ -139,3 +139,35 @@
 
 .rs-button-primary { background-color: var(--rs-yellow); color: var(--rs-navy); }
 .rs-button-primary:hover:not(:disabled) { background-color: #dda600; color: var(--rs-navy); }
+
+/* Operational forms share the Flutter palette, typography and touch targets. */
+.rs-workspace { max-width: 1152px; margin: auto; padding: 1.5rem; display: grid; gap: 1.5rem; }
+.rs-workspace h1 { font-size: clamp(1.35rem, 3vw, 1.9rem); font-weight: 800; }
+.rs-workspace h2 { font-size: 1.1rem; font-weight: 700; }
+.rs-workspace h3 { font-size: 1rem; font-weight: 700; }
+.rs-page-header { background: var(--rs-navy); color: white; padding: 1.5rem; border-radius: 24px; border-bottom: 4px solid var(--rs-yellow); }
+.rs-page-header p { color: var(--rs-on-dark-muted); margin-top: .75rem; }
+.rs-panel { background: white; border: 1px solid var(--rs-border); border-radius: 20px; padding: 1.25rem; min-width: 0; }
+.rs-stack { display: grid; gap: 1rem; min-width: 0; }
+.rs-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
+.rs-actions { display: flex; flex-wrap: wrap; align-items: center; gap: .65rem; }
+.rs-workspace label, .rs-dialog-content label { display: grid; gap: .4rem; font-size: .875rem; font-weight: 600; min-width: 0; }
+.rs-workspace input:not([type=checkbox]), .rs-workspace select, .rs-workspace textarea, .rs-dialog-content input:not([type=checkbox]), .rs-dialog-content select, .rs-dialog-content textarea { width: 100%; min-width: 0; padding: .75rem; border: 1px solid var(--rs-border); background: white; color: var(--rs-navy); }
+.rs-check { display: flex !important; align-items: start; gap: .65rem !important; font-weight: 400 !important; }
+.rs-check input { margin-top: .2rem; accent-color: var(--rs-navy); }
+.rs-hint { font-size: .8rem; line-height: 1.6; color: var(--rs-text-secondary); }
+.rs-error { font-size: .875rem; color: var(--rs-danger); }
+.rs-row { padding: 1rem 0; border-top: 1px solid var(--rs-divider); display: grid; gap: .75rem; overflow-wrap: anywhere; }
+.rs-badge { display: inline-block; width: fit-content; padding: .3rem .65rem; border-radius: 8px; background: var(--rs-notice-bg); color: var(--rs-notice-text); font-size: .8rem; font-weight: 600; }
+.rs-form-dialog { width: min(760px, calc(100vw - 2rem)); max-height: 92dvh; margin: auto; padding: 0; border: 1px solid var(--rs-border); border-radius: 24px; color: var(--rs-navy); background: white; }
+.rs-form-dialog::backdrop { background: #15243baf; }
+.rs-dialog-header { display: flex; justify-content: space-between; align-items: center; gap: 1rem; padding: 1.25rem; border-bottom: 1px solid var(--rs-divider); }
+.rs-dialog-header h2 { font-size: 1.2rem; font-weight: 700; }
+.rs-dialog-content { padding: 1.25rem; }
+.rs-map { width: 100%; height: 300px; border: 1px solid var(--rs-border); border-radius: 14px; background: var(--rs-map-ground); z-index: 0; }
+.rs-private-photo { width: 72px; height: 72px; object-fit: cover; border-radius: 16px; }
+@media(max-width: 600px) { .rs-grid { grid-template-columns: minmax(0, 1fr); } .rs-workspace { padding: 1rem; } .rs-actions > button { max-width: 100%; } .rs-map { height: 250px; } }
+
+.rs-badge[data-status=VERIFIED], .rs-badge[data-status=ACTIVE], .rs-badge[data-status=ENABLED] { background: var(--rs-success-bg); color: var(--rs-success); }
+.rs-badge[data-status=REVOKED], .rs-badge[data-status=SUSPENDED] { background: #fbecea; color: var(--rs-danger); }
+.rs-badge[data-status=DISABLED], .rs-badge[data-status=CANCELLED], .rs-badge[data-status=WITHDRAWN], .rs-badge[data-status=REMOVED] { background: var(--rs-disabled); color: var(--rs-text-secondary); }

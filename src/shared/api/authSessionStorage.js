@@ -36,7 +36,26 @@ export function saveAuthSession(session) {
   notifySessionChange('signed-in')
 }
 export function clearAuthSession(reason = 'signed-out') {
-  try { sessionStorage.removeItem(AUTH_SESSION_KEY) }
+  try {
+    sessionStorage.removeItem(AUTH_SESSION_KEY)
+    for (const key of Object.keys(sessionStorage)) if (key.startsWith('rutasegura.operation-draft.')) sessionStorage.removeItem(key)
+  }
   catch { /* Storage may be unavailable; always invalidate in-memory requests and state. */ }
   finally { notifySessionChange(reason) }
+}
+
+// Only recovery IDs, never credentials or child/contact data. Scoped to the current account and operation.
+function operationDraftKey(name) {
+  const user = readAuthSession()?.user
+  return user?.id && user?.organizationId && user.roleTier === 'ADMIN'
+    ? `rutasegura.operation-draft.${user.id}.${user.organizationId}.${name}` : null
+}
+export function readOperationDraft(name) {
+  try { const key = operationDraftKey(name); return key ? sessionStorage.getItem(key) || '' : '' } catch { return '' }
+}
+export function writeOperationDraft(name, id) {
+  try { const key = operationDraftKey(name); if (key) sessionStorage.setItem(key, id) } catch { /* Keep the ID visible for manual recovery when storage is unavailable. */ }
+}
+export function clearOperationDraft(name) {
+  try { const key = operationDraftKey(name); if (key) sessionStorage.removeItem(key) } catch { /* The current UI still completes the operation. */ }
 }

@@ -70,3 +70,11 @@ export async function getGuardianTrips(from, to) {
 
   return data
 }
+export async function getMyGuardianLinks() { return (await apiClient.get('/stakeholders/me/guardian-links')).data }
+export async function uploadStudentPhoto(studentId, file) {
+  const payload = new FormData(); payload.append('photo', file)
+  return (await apiClient.put(`/stakeholders/me/students/${studentId}/photo`, payload)).data
+}
+export async function removeStudentPhoto(studentId) { return (await apiClient.delete(`/stakeholders/me/students/${studentId}/photo`)).data }
+export async function changeStudentPickup(studentId, payload) { return (await apiClient.put(`/stakeholders/me/students/${studentId}/pickup-location`, payload)).data }
+export async function withdrawStudent(studentId, enrollmentId) { return (await apiClient.delete(`/stakeholders/me/students/${studentId}/enrollments/${enrollmentId}`)).data }

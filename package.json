@@ -7,13 +7,16 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "test:auth": "playwright test"
+    "test:auth": "playwright test tests/browser/auth.spec.js",
+    "test": "playwright test",
+    "test:operations": "playwright test tests/browser/operations.spec.js"
   },
   "dependencies": {
     "@microsoft/signalr": "^11.0.0",
     "@primeuix/themes": "2.0.3",
     "@vue/devtools-api": "^8.2.1",
     "axios": "^1.21.1",
+    "leaflet": "1.9.4",
     "lucide-vue-next": "^1.0.0",
     "pinia": "^4.1.0",
     "primevue": "4.5.5",

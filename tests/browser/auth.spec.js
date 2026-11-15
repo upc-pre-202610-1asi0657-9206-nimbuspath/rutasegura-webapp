@@ -94,8 +94,10 @@ test('401 on a resource ends the current session', async ({ page }) => {
   const state = await mockApi(page)
   await login(page)
   await expect(page).toHaveURL(/\/admin\/routes$/)
+  // Wait for the initial successful load before making the next request unauthorized.
+  await expect(page.getByRole('heading', { name: 'Aún no hay rutas escolares' })).toBeVisible()
   state.routesStatus = 401
-  await page.getByRole('button', { name: /Actualizar/ }).first().click()
+  await page.getByRole('button', { name: 'Actualizar rutas', exact: true }).click()
   await expect(page).toHaveURL(/\/login$/)
   expect(await page.evaluate((key) => sessionStorage.getItem(key), key)).toBeNull()
 })

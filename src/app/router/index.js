@@ -18,6 +18,7 @@ const ParentProfileView = () => import('@/modules/parent/views/ParentProfileView
 const AdminLayout = () => import('@/modules/admin/layouts/AdminLayout.vue')
 const AdminRoutesView = () => import('@/modules/admin/views/AdminRoutesView.vue')
 const AdminResourcesView = () => import('@/modules/admin/views/AdminResourcesView.vue')
+const AdminFamiliesView = () => import('@/modules/admin/views/AdminFamiliesView.vue')
 const AdminTripsView = () => import('@/modules/admin/views/AdminTripsView.vue')
 
 const routes = [
@@ -67,6 +68,7 @@ const routes = [
         name: 'admin-resources',
         component: AdminResourcesView,
       },
+      { path: 'families', name: 'admin-families', component: AdminFamiliesView },
       {
         path: 'trips',
         name: 'admin-trips',
