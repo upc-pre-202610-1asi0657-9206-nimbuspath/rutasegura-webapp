@@ -7,7 +7,11 @@ import LoginView from '@/modules/auth/views/LoginView.vue'
 import RegisterView from '@/modules/auth/views/RegisterView.vue'
 import PortalHomeView from '@/app/views/PortalHomeView.vue'
 import ParentHomeView from '@/modules/parent/views/ParentHomeView.vue'
-
+import ParentLayout from '@/modules/parent/layouts/ParentLayout.vue'
+import ParentStudentsView from '@/modules/parent/views/ParentStudentsView.vue'
+import ParentRoutesView from '@/modules/parent/views/ParentRoutesView.vue'
+import ParentHistoryView from '@/modules/parent/views/ParentHistoryView.vue'
+import ParentProfileView from '@/modules/parent/views/ParentProfileView.vue'
 const routes = [
   {
     path: '/',
@@ -49,12 +53,38 @@ const routes = [
   },
   {
   path: '/parent',
-  name: 'parent-home',
-  component: ParentHomeView,
+  component: ParentLayout,
   meta: {
     requiresAuth: true,
     role: 'PARENT',
   },
+  children: [
+    {
+      path: '',
+      name: 'parent-home',
+      component: ParentHomeView,
+    },
+    {
+      path: 'students',
+      name: 'parent-students',
+      component: ParentStudentsView,
+    },
+    {
+      path: 'routes',
+      name: 'parent-routes',
+      component: ParentRoutesView,
+    },
+    {
+      path: 'history',
+      name: 'parent-history',
+      component: ParentHistoryView,
+    },
+    {
+      path: 'profile',
+      name: 'parent-profile',
+      component: ParentProfileView,
+    },
+  ],
   },
   {
     path: '/:pathMatch(.*)*',

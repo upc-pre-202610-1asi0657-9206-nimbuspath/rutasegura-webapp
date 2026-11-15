@@ -84,53 +84,6 @@ onMounted(loadDashboard)
 
 <template>
   <div class="min-h-dvh bg-slate-50 text-slate-900">
-    <!-- Header -->
-    <header
-      class="sticky top-0 z-30 border-b border-slate-200/80 bg-white/90 backdrop-blur-xl"
-    >
-      <div
-        class="mx-auto flex max-w-7xl items-center justify-between px-5 py-4 lg:px-8"
-      >
-        <div class="flex items-center gap-3">
-          <div
-            class="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-blue-700 text-white shadow-lg shadow-blue-600/20"
-          >
-            <BusFront :size="21" />
-          </div>
-
-          <div>
-            <p class="text-base font-bold tracking-tight">
-              RutaSegura
-            </p>
-
-            <p class="text-xs text-slate-500">
-              Portal de familias
-            </p>
-          </div>
-        </div>
-
-        <div class="flex items-center gap-3">
-          <div class="hidden text-right sm:block">
-            <p class="text-sm font-semibold">
-              {{ parentName }}
-            </p>
-
-            <p class="text-xs text-slate-500">
-              {{ auth.user?.email }}
-            </p>
-          </div>
-
-          <button
-            type="button"
-            class="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 transition hover:border-red-200 hover:bg-red-50 hover:text-red-600"
-            aria-label="Cerrar sesión"
-            @click="logout"
-          >
-            <LogOut :size="18" />
-          </button>
-        </div>
-      </div>
-    </header>
 
     <main class="mx-auto max-w-7xl px-5 py-7 lg:px-8 lg:py-10">
       <!-- Welcome -->
