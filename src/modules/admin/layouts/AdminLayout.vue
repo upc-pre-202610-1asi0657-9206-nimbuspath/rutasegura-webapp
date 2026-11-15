@@ -7,6 +7,7 @@ import {
   useRouter,
 } from 'vue-router'
 import {
+  Activity,
   BusFront,
   ChevronRight,
   LogOut,
@@ -51,7 +52,14 @@ const items = [
     },
     icon: Users,
   },
-]   
+  {
+    label: 'Monitoreo de viajes',
+    route: {
+      name: 'admin-trips',
+    },
+    icon: Activity,
+  },
+]
 
 const activeItem = computed(() => {
   return (
