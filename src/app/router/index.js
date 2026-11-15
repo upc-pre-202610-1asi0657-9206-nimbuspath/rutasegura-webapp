@@ -4,7 +4,9 @@ import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore } from '@/modules/auth/stores/authStore'
 
 import LoginView from '@/modules/auth/views/LoginView.vue'
+import RegisterView from '@/modules/auth/views/RegisterView.vue'
 import PortalHomeView from '@/app/views/PortalHomeView.vue'
+import ParentHomeView from '@/modules/parent/views/ParentHomeView.vue'
 
 const routes = [
   {
@@ -18,6 +20,14 @@ const routes = [
     meta: {
       guestOnly: true,
     },
+  },
+  {
+  path: '/register',
+  name: 'register',
+  component: RegisterView,
+  meta: {
+    guestOnly: true,
+  },
   },
   {
     path: '/admin',
@@ -36,6 +46,15 @@ const routes = [
       requiresAuth: true,
       roles: ['PARENT'],
     },
+  },
+  {
+  path: '/parent',
+  name: 'parent-home',
+  component: ParentHomeView,
+  meta: {
+    requiresAuth: true,
+    role: 'PARENT',
+  },
   },
   {
     path: '/:pathMatch(.*)*',

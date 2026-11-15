@@ -32,3 +32,16 @@ export async function getCurrentUser() {
 
   return data
 }
+
+export async function signUp(payload) {
+  const { data } = await apiClient.post('/users', {
+    firstName: payload.firstName.trim(),
+    lastName: payload.lastName.trim(),
+    email: payload.email.trim(),
+    password: payload.password,
+    roleTier: 'PARENT',
+    organizationId: null,
+  })
+
+  return data
+}
