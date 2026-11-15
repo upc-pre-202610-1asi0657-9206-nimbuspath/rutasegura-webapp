@@ -1,6 +1,6 @@
 <script setup>
-import { computed, reactive, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { computed, reactive, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 
 import {
   BusFront,
@@ -20,6 +20,7 @@ import {
 import { useAuthStore } from '@/modules/auth/stores/authStore'
 
 const router = useRouter()
+const route = useRoute()
 const auth = useAuthStore()
 
 const form = reactive({
@@ -35,6 +36,14 @@ const touched = reactive({
 const showPassword = ref(false)
 const capsLock = ref(false)
 const loginMessage = ref('')
+const registered = ref(false)
+
+watch(() => [route.query.registered, route.query.email], ([status, email]) => {
+  registered.value = status === '1'
+  if (registered.value && typeof email === 'string') {
+    form.email = email
+  }
+}, { immediate: true })
 
 const roleRoutes = {
   ADMIN: 'admin-home',
@@ -522,14 +531,14 @@ async function handleSubmit() {
 
         <span class="flex items-center gap-2 text-slate-300">
           <ShieldCheck :size="15" class="text-emerald-400" />
-          Acceso para usuarios autorizados
+           RutaSegura • Plataforma Escolar Segura 
         </span>
       </div>
 
     </aside>
 
     <!-- ───────── RIGHT PANEL: FRAMED AUTHENTICATION PORTAL ───────── -->
-    <section class="form-panel relative flex min-h-dvh flex-col justify-between overflow-hidden lg:col-span-6 lg:h-dvh xl:col-span-5">
+    <section class="form-panel relative flex min-h-dvh flex-col justify-between overflow-hidden lg:col-span-6 lg:h-dvh lg:overflow-y-auto xl:col-span-5">
 
       <!-- Ambient Right-Panel Background Landscape / Route Contours -->
       <div class="pointer-events-none absolute -right-24 -top-24 h-80 w-80 rounded-full bg-blue-500/[0.07] blur-3xl"></div>
@@ -608,6 +617,15 @@ async function handleSubmit() {
             </header>
 
             <!-- Backend Error Banner -->
+            <div
+              v-if="registered"
+              role="status"
+              class="mt-5 flex items-start gap-3 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800"
+            >
+              <ShieldCheck :size="18" class="mt-0.5 shrink-0" aria-hidden="true" />
+              <p>Tu cuenta se creó correctamente. Inicia sesión para continuar.</p>
+            </div>
+
             <div
               v-if="displayError"
               role="alert"
@@ -760,6 +778,18 @@ async function handleSubmit() {
                 />
               </button>
 
+              <div class="register-link flex flex-wrap items-center justify-center gap-x-1.5 gap-y-1 text-center text-sm text-slate-500">
+                <span>¿No tienes una cuenta?</span>
+
+                <button
+                  type="button"
+                  class="rounded-md px-1 py-1 font-semibold text-blue-600 transition hover:text-blue-700 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 disabled:cursor-not-allowed disabled:opacity-60"
+                  :disabled="auth.loading"
+                  @click="router.push({ name: 'register' })"
+                >
+                  Regístrate
+                </button>
+              </div>
             </form>
 
             <!-- Help Card -->
