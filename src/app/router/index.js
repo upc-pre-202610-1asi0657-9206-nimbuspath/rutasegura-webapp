@@ -1,17 +1,24 @@
-
-import { createRouter, createWebHistory } from 'vue-router'
+import {
+  createRouter,
+  createWebHistory,
+} from 'vue-router'
 
 import { useAuthStore } from '@/modules/auth/stores/authStore'
 
 import LoginView from '@/modules/auth/views/LoginView.vue'
 import RegisterView from '@/modules/auth/views/RegisterView.vue'
-import PortalHomeView from '@/app/views/PortalHomeView.vue'
-import ParentHomeView from '@/modules/parent/views/ParentHomeView.vue'
+
 import ParentLayout from '@/modules/parent/layouts/ParentLayout.vue'
+import ParentHomeView from '@/modules/parent/views/ParentHomeView.vue'
 import ParentStudentsView from '@/modules/parent/views/ParentStudentsView.vue'
 import ParentRoutesView from '@/modules/parent/views/ParentRoutesView.vue'
 import ParentHistoryView from '@/modules/parent/views/ParentHistoryView.vue'
 import ParentProfileView from '@/modules/parent/views/ParentProfileView.vue'
+
+import AdminLayout from '@/modules/admin/layouts/AdminLayout.vue'
+import AdminRoutesView from '@/modules/admin/views/AdminRoutesView.vue'
+import AdminResourcesView from '@/modules/admin/views/AdminResourcesView.vue'
+
 const routes = [
   {
     path: '/',
@@ -26,66 +33,79 @@ const routes = [
     },
   },
   {
-  path: '/register',
-  name: 'register',
-  component: RegisterView,
-  meta: {
-    guestOnly: true,
+    path: '/register',
+    name: 'register',
+    component: RegisterView,
+    meta: {
+      guestOnly: true,
+    },
   },
-  },
+
+  // ADMIN
   {
     path: '/admin',
-    name: 'admin-home',
-    component: PortalHomeView,
+    component: AdminLayout,
     meta: {
       requiresAuth: true,
       roles: ['ADMIN'],
     },
+    children: [
+      {
+        path: '',
+        redirect: {
+          name: 'admin-routes',
+        },
+      },
+      {
+        path: 'routes',
+        name: 'admin-routes',
+        component: AdminRoutesView,
+      },
+      {
+        path: 'resources',
+        name: 'admin-resources',
+        component: AdminResourcesView,
+      },
+    ],
   },
+
+  // PARENT
   {
     path: '/parent',
-    name: 'parent-home',
-    component: PortalHomeView,
+    component: ParentLayout,
     meta: {
       requiresAuth: true,
       roles: ['PARENT'],
     },
+    children: [
+      {
+        path: '',
+        name: 'parent-home',
+        component: ParentHomeView,
+      },
+      {
+        path: 'students',
+        name: 'parent-students',
+        component: ParentStudentsView,
+      },
+      {
+        path: 'routes',
+        name: 'parent-routes',
+        component: ParentRoutesView,
+      },
+      {
+        path: 'history',
+        name: 'parent-history',
+        component: ParentHistoryView,
+      },
+      {
+        path: 'profile',
+        name: 'parent-profile',
+        component: ParentProfileView,
+      },
+    ],
   },
-  {
-  path: '/parent',
-  component: ParentLayout,
-  meta: {
-    requiresAuth: true,
-    role: 'PARENT',
-  },
-  children: [
-    {
-      path: '',
-      name: 'parent-home',
-      component: ParentHomeView,
-    },
-    {
-      path: 'students',
-      name: 'parent-students',
-      component: ParentStudentsView,
-    },
-    {
-      path: 'routes',
-      name: 'parent-routes',
-      component: ParentRoutesView,
-    },
-    {
-      path: 'history',
-      name: 'parent-history',
-      component: ParentHistoryView,
-    },
-    {
-      path: 'profile',
-      name: 'parent-profile',
-      component: ParentProfileView,
-    },
-  ],
-  },
+
   {
     path: '/:pathMatch(.*)*',
     redirect: '/',
@@ -93,10 +113,15 @@ const routes = [
 ]
 
 const router = createRouter({
-  history: createWebHistory(import.meta.env.BASE_URL),
+  history: createWebHistory(
+    import.meta.env.BASE_URL,
+  ),
   routes,
+
   scrollBehavior() {
-    return { top: 0 }
+    return {
+      top: 0,
+    }
   },
 })
 
@@ -105,24 +130,50 @@ router.beforeEach(async (to) => {
 
   await auth.initialize()
 
-  if (to.meta.requiresAuth && !auth.isAuthenticated) {
+  if (
+    to.meta.requiresAuth &&
+    !auth.isAuthenticated
+  ) {
     return {
       name: 'login',
-      query: { redirect: to.fullPath },
+      query: {
+        redirect: to.fullPath,
+      },
     }
   }
 
-  if (to.meta.roles && !to.meta.roles.includes(auth.userRole)) {
-    if (auth.isAdmin) return { name: 'admin-home' }
-    if (auth.isParent) return { name: 'parent-home' }
+  if (
+    to.meta.roles &&
+    !to.meta.roles.includes(auth.userRole)
+  ) {
+    if (auth.isAdmin) {
+      return {
+        name: 'admin-routes',
+      }
+    }
 
-    return { name: 'login' }
+    if (auth.isParent) {
+      return {
+        name: 'parent-home',
+      }
+    }
+
+    return {
+      name: 'login',
+    }
   }
 
-  if (to.meta.guestOnly && auth.isAuthenticated) {
+  if (
+    to.meta.guestOnly &&
+    auth.isAuthenticated
+  ) {
     return auth.isAdmin
-      ? { name: 'admin-home' }
-      : { name: 'parent-home' }
+      ? {
+          name: 'admin-routes',
+        }
+      : {
+          name: 'parent-home',
+        }
   }
 
   return true
