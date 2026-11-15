@@ -12,6 +12,7 @@ const ParentLayout = () => import('@/modules/parent/layouts/ParentLayout.vue')
 const ParentHomeView = () => import('@/modules/parent/views/ParentHomeView.vue')
 const ParentStudentsView = () => import('@/modules/parent/views/ParentStudentsView.vue')
 const ParentRoutesView = () => import('@/modules/parent/views/ParentRoutesView.vue')
+const ParentTrackingView = () => import('@/modules/parent/views/ParentTrackingView.vue')
 const ParentHistoryView = () => import('@/modules/parent/views/ParentHistoryView.vue')
 const ParentProfileView = () => import('@/modules/parent/views/ParentProfileView.vue')
 
@@ -101,6 +102,7 @@ const routes = [
         name: 'parent-routes',
         component: ParentRoutesView,
       },
+      { path: 'tracking', name: 'parent-tracking', component: ParentTrackingView },
       {
         path: 'history',
         name: 'parent-history',

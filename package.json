@@ -9,7 +9,8 @@
     "preview": "vite preview",
     "test:auth": "playwright test tests/browser/auth.spec.js",
     "test": "playwright test",
-    "test:operations": "playwright test tests/browser/operations.spec.js"
+    "test:operations": "playwright test tests/browser/operations.spec.js",
+    "test:tracking": "playwright test tests/browser/tracking.spec.js"
   },
   "dependencies": {
     "@microsoft/signalr": "^11.0.0",

@@ -1,8 +1,12 @@
 <script setup>
+import LiveTripPanel from '@/modules/tracking/components/LiveTripPanel.vue'
+import AppFormDialog from '@/shared/components/AppFormDialog.vue'
+import { onBeforeUnmount } from 'vue'
 import AppFeedback from '@/shared/components/AppFeedback.vue'
 import { computed, onMounted, ref } from 'vue'
 import {
   AlertTriangle,
+  TriangleAlert,
   BusFront,
   CalendarDays,
   CheckCircle2,
@@ -35,7 +39,6 @@ import {
 
 import {
   getOrganizationTrips,
-  getTripLive,
   scheduleTrip,
 } from '@/modules/admin/services/tripMonitoringService'
 
@@ -43,6 +46,7 @@ import {
 // STATE
 // ============================================================
 
+let listGeneration = 0, disposed = false
 const trips = ref([])
 const routes = ref([])
 const drivers = ref([])
@@ -72,8 +76,6 @@ const scheduleErrorKey = ref(0)
 
 const liveModal = ref(false)
 const liveTrip = ref(null)
-const liveLoading = ref(false)
-const liveError = ref('')
 
 // ============================================================
 // HELPERS
@@ -146,6 +148,7 @@ function statusLabel(status) {
   const values = {
     Scheduled: 'Programado',
     InProgress: 'En curso',
+    Delayed: 'En curso con retraso',
     Completed: 'Completado',
     Cancelled: 'Cancelado',
   }
@@ -326,6 +329,7 @@ const canSchedule = computed(() => {
 // ============================================================
 
 async function loadTrips() {
+  const version = ++listGeneration
   loading.value = true
   error.value = ''
 
@@ -356,6 +360,7 @@ async function loadTrips() {
       getVehicles(),
     ])
 
+    if (version !== listGeneration || disposed) return
     trips.value =
       Array.isArray(tripData)
         ? tripData
@@ -376,13 +381,14 @@ async function loadTrips() {
         ? vehicleData
         : []
   } catch (err) {
-
+    if (version !== listGeneration || disposed) return
+    trips.value = []
     error.value = backendError(
       err,
       'No fue posible cargar los viajes.',
     )
   } finally {
-    loading.value = false
+    if (version === listGeneration && !disposed) loading.value = false
   }
 }
 
@@ -456,36 +462,19 @@ async function submitSchedule() {
 // LIVE
 // ============================================================
 
-async function openLiveTrip(
-  trip,
-) {
-  liveModal.value = true
-  liveTrip.value = null
-  liveError.value = ''
-  liveLoading.value = true
-
-  try {
-    liveTrip.value =
-      await getTripLive(
-        trip.tripId,
-      )
-  } catch (err) {
-
-    liveError.value =
-      backendError(
-        err,
-        'No fue posible consultar el estado del viaje.',
-      )
-  } finally {
-    liveLoading.value = false
-  }
+function openLiveTrip(trip) { liveTrip.value = trip; liveModal.value = true }
+function closeLiveModal() { liveModal.value = false; liveTrip.value = null }
+let listTimer, listBusy = false
+async function refreshTripList() {
+  if (disposed || listBusy || document.hidden || loading.value) return
+  listBusy = true
+  const version = ++listGeneration
+  try { const range = dateRange(selectedDate.value); const result = await getOrganizationTrips({...range,status:statusFilter.value || null}); if (version === listGeneration && !disposed) { trips.value = result; error.value = '' } }
+  catch(e) { if (version !== listGeneration || disposed) return; trips.value = []; error.value = backendError(e,'No se pudo actualizar el monitoreo.') }
+  finally { listBusy = false }
 }
-
-function closeLiveModal() {
-  liveModal.value = false
-  liveTrip.value = null
-  liveError.value = ''
-}
+onMounted(()=>{listTimer=setInterval(refreshTripList,10000)})
+onBeforeUnmount(()=>{disposed=true;++listGeneration;clearInterval(listTimer)})
 
 // ============================================================
 // FILTERS
@@ -1064,130 +1053,9 @@ onMounted(loadTrips)
       </div>
     </Transition>
 
-    <!-- ───────── LIVE TRIP MODAL ───────── -->
-    <Transition name="modal-fade">
-      <div
-        v-if="liveModal"
-        class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-xs"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="live-trip-title"
-        @click.self="closeLiveModal"
-      >
-        <div class="modal-card relative w-full max-w-xl overflow-hidden rounded-3xl border border-slate-200/90 bg-white shadow-2xl">
-          <!-- Top Gradient Accent Strip -->
-          <div class="h-1.5 w-full bg-gradient-to-r from-brand-navy via-brand-yellow to-brand-navy-light"></div>
-
-          <!-- Modal Header -->
-          <div class="flex items-start justify-between border-b border-slate-100 px-6 py-4 sm:px-7">
-            <div class="flex items-center gap-3">
-              <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600 ring-1 ring-blue-500/15">
-                <Activity :size="20" class="animate-pulse" />
-              </div>
-              <div>
-                <p class="text-[10px] font-bold uppercase tracking-widest text-blue-600">
-                  Telemetry Live Tracking
-                </p>
-                <h2 id="live-trip-title" class="text-lg font-bold tracking-tight text-slate-900">
-                  {{ liveTrip?.routeName || 'Consultando viaje...' }}
-                </h2>
-              </div>
-            </div>
-
-            <button
-              type="button"
-              class="flex h-8 w-8 items-center justify-center rounded-xl text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
-              aria-label="Cerrar ventana"
-              @click="closeLiveModal"
-            >
-              <X :size="18" />
-            </button>
-          </div>
-
-          <!-- Modal Body -->
-          <div class="px-6 py-5 sm:px-7">
-            <div v-if="liveLoading" class="py-12 text-center">
-              <RefreshCcw :size="26" class="mx-auto animate-spin text-blue-600" />
-              <p class="mt-3 text-xs font-medium text-slate-500">Obteniendo coordenadas GPS en tiempo real...</p>
-            </div>
-
-            <div
-              v-else-if="liveError"
-              role="alert"
-              class="flex items-start gap-2.5 rounded-xl border border-red-200 bg-red-50/90 p-4 text-xs font-medium text-red-800"
-            >
-              <TriangleAlert :size="17" class="mt-0.5 shrink-0 text-red-600" />
-              <span>{{ liveError }}</span>
-            </div>
-
-            <div v-else-if="liveTrip" class="space-y-4">
-              <div class="flex items-center justify-between rounded-2xl border border-slate-200/80 bg-slate-50/80 px-4 py-3.5">
-                <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Estado operativo</span>
-                <span class="rounded-full px-3 py-1 text-xs font-bold uppercase tracking-wider ring-1" :class="statusClass(liveTrip.status)">
-                  {{ statusLabel(liveTrip.status) }}
-                </span>
-              </div>
-
-              <div class="grid gap-3 sm:grid-cols-2">
-                <div class="rounded-2xl border border-slate-200/70 bg-slate-50/70 p-3.5">
-                  <p class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Estudiantes a bordo</p>
-                  <p class="mt-1 text-base font-extrabold text-slate-900">
-                    {{ liveTrip.studentsOnBoard }} / {{ liveTrip.totalStudents }}
-                  </p>
-                </div>
-
-                <div class="rounded-2xl border border-slate-200/70 bg-slate-50/70 p-3.5">
-                  <p class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Estado de seguridad</p>
-                  <p
-                    class="mt-1 text-base font-extrabold"
-                    :class="liveTrip.hasActiveSos ? 'text-red-600' : 'text-emerald-600'"
-                  >
-                    {{ liveTrip.hasActiveSos ? 'Alerta SOS Activa' : 'Sin alertas SOS' }}
-                  </p>
-                </div>
-              </div>
-
-              <div
-                v-if="liveTrip.nextStop"
-                class="flex items-start gap-3 rounded-2xl border border-blue-200 bg-blue-50/70 p-4"
-              >
-                <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-blue-100 text-blue-700">
-                  <MapPin :size="18" />
-                </div>
-                <div>
-                  <p class="text-[11px] font-bold uppercase tracking-wider text-blue-700">
-                    Próxima parada programada
-                  </p>
-                  <p class="mt-0.5 text-sm font-bold text-slate-900">
-                    {{ liveTrip.nextStop.name }}
-                  </p>
-                  <p class="mt-0.5 text-xs text-slate-500">
-                    Parada {{ liveTrip.nextStop.sequence }} de {{ liveTrip.nextStop.totalStops }}
-                  </p>
-                </div>
-              </div>
-
-              <div
-                v-if="liveTrip.position"
-                class="rounded-2xl border border-slate-200/70 bg-slate-50/70 p-3.5"
-              >
-                <p class="text-[11px] font-bold uppercase tracking-wider text-slate-400">
-                  Última posición GPS reportada
-                </p>
-                <p class="mt-1 font-mono text-xs font-bold text-slate-800">
-                  Lat: {{ liveTrip.position.latitude }}, Lng: {{ liveTrip.position.longitude }}
-                </p>
-              </div>
-
-              <div class="flex items-center justify-center gap-2 rounded-xl bg-slate-100/80 py-3 text-xs font-semibold text-slate-600">
-                <Navigation :size="15" class="text-blue-600" />
-                <span>{{ liveTrip.passengers?.length || 0 }} pasajeros registrados en telemetría</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </Transition>
+    <AppFormDialog v-if="liveModal && liveTrip" title="Monitoreo del viaje" @close="closeLiveModal">
+      <LiveTripPanel :key="liveTrip.tripId" :trip-id="liveTrip.tripId" administrator @changed="refreshTripList" />
+    </AppFormDialog>
 
   </div>
 </template>

@@ -21,9 +21,9 @@ function render() {
     const text = document.createElement("span");
     text.textContent = point.name || `Punto ${index + 1}`;
     L.circleMarker([Number(point.latitude), Number(point.longitude)], {
-      radius: 8,
-      color: "#15243B",
-      fillColor: "#F2B705",
+      radius: point.kind === "vehicle" ? 10 : 8,
+      color: point.kind === "vehicle" ? "#FFFFFF" : "#15243B",
+      fillColor: point.kind === "vehicle" ? "#15243B" : "#F2B705",
       fillOpacity: 1,
     })
       .bindTooltip(text)
@@ -80,8 +80,7 @@ onBeforeUnmount(() => {
   <div>
     <div ref="element" class="rs-map" role="region" :aria-label="label" />
     <p v-if="tileError" class="rs-hint" role="status">
-      No se pudo cargar el mapa base. Puedes usar las coordenadas y los
-      controles del formulario.
+      {{ selectable ? "No se pudo cargar el mapa base. Puedes usar las coordenadas y los controles del formulario." : "No se pudo cargar el mapa base. Los puntos recibidos siguen visibles; comprueba tu conexión para recuperar las calles." }}
     </p>
     <p v-if="selectable" class="rs-hint">
       Toca el mapa o introduce coordenadas para elegir el punto. Después

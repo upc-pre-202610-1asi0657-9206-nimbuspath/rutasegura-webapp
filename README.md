@@ -64,3 +64,9 @@ npm test
 ```
 
 Las pruebas HTTP controladas no sustituyen el ensayo con Gateway/backend desplegado, MySQL/RabbitMQ, ORS real y la agenda móvil. No se modificó el backend ni se aplicaron migraciones como parte de esta entrega web.
+
+## Seguimiento y SOS (entrega 4)
+
+PARENT dispone de `/parent/tracking` con selección de hijo/viaje, mapa y asistencia autorizados. El detalle ADMIN de viajes se actualiza con SignalR/REST y permite atender/cerrar SOS. Se limpian datos y canales al finalizar o perder acceso.
+
+[Uso, contratos y validación pendiente](docs/SEGUIMIENTO-Y-SOS.md). Pruebas específicas: `npm run test:tracking`. El recorrido real con app/Gateway y la medición de latencia siguen siendo una puerta de cierre de integración.

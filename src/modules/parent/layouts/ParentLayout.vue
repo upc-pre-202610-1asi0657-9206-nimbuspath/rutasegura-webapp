@@ -40,6 +40,7 @@ const userInitials = computed(() => {
 })
 
 const items = [
+  { label: 'Seguimiento en vivo', shortLabel: 'En vivo', route: { name: 'parent-tracking' }, icon: BusFront },
   {
     label: 'Inicio',
     shortLabel: 'Inicio',
@@ -353,7 +354,7 @@ async function logout() {
 
       <!-- ───────── MOBILE BOTTOM TAB BAR ───────── -->
       <nav
-        class="fixed inset-x-0 bottom-0 z-30 grid grid-cols-5 border-t border-slate-200/90 bg-white/95 px-2 py-1.5 shadow-[0_-8px_24px_rgba(15,23,42,0.06)] backdrop-blur-lg lg:hidden"
+        class="fixed inset-x-0 bottom-0 z-30 grid grid-cols-6 border-t border-slate-200/90 bg-white/95 px-2 py-1.5 shadow-[0_-8px_24px_rgba(15,23,42,0.06)] backdrop-blur-lg lg:hidden"
         aria-label="Navegación rápida inferior"
       >
         <RouterLink
