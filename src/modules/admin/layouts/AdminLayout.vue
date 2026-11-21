@@ -17,6 +17,7 @@ import {
   Sparkles,
   Megaphone,
   CreditCard,
+  Building2,
   Users,
   X,
 } from 'lucide-vue-next'
@@ -49,6 +50,7 @@ const items = [
   { label: 'Familias y alumnos', route: { name: 'admin-families' }, icon: Users },
   { label: 'Comunicados', route: { name: 'admin-announcements' }, icon: Megaphone },
   { label: 'Suscripción', route: { name: 'admin-subscription' }, icon: CreditCard },
+  { label: 'Organización', route: { name: 'admin-organization' }, icon: Building2 },
   {
     label: 'Rutas escolares',
     route: {

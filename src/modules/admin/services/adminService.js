@@ -106,6 +106,30 @@ export async function releaseRouteResources(
   return data
 }
 
+export async function renameRoute(routeId, name) {
+  await apiClient.put(`/routes/${encodeURIComponent(routeId)}/name`, {
+    name: name.trim(),
+  })
+}
+
+export async function changeRouteSchedule(routeId, schedule) {
+  const payload = {
+    departureTime: normalizeTime(schedule.departureTime),
+    estimatedArrivalTime: normalizeTime(schedule.estimatedArrivalTime),
+    operatingDays: schedule.operatingDays,
+  }
+  if (schedule.timeZoneId) payload.timeZoneId = schedule.timeZoneId
+  await apiClient.put(`/routes/${encodeURIComponent(routeId)}/schedule`, payload)
+}
+
+export async function getRouteTripRecords(routeId, signal) {
+  const { data } = await apiClient.get(
+    `/routes/${encodeURIComponent(routeId)}/trip-records`,
+    { signal },
+  )
+  return Array.isArray(data) ? data : data?.items ?? data?.records ?? []
+}
+
 export async function activateRoute(
   routeId,
 ) {

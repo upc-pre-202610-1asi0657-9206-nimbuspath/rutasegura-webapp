@@ -60,14 +60,31 @@ export async function updateParentProfile(payload) {
   return data
 }
 
-export async function getGuardianTrips(from, to) {
+export async function getGuardianTrips(from, to, signal) {
   const { data } = await apiClient.get('/guardians/me/trips', {
     params: {
       from,
       to,
     },
+    signal,
   })
 
+  return data
+}
+export async function updateStudent(studentId, payload) {
+  const { data } = await apiClient.put(`/stakeholders/me/students/${encodeURIComponent(studentId)}`, {
+    firstName: payload.firstName.trim(),
+    lastName: payload.lastName.trim(),
+    birthDate: payload.birthDate || null,
+    schoolName: payload.schoolName?.trim() || null,
+  })
+  return data
+}
+export async function reportGuardianAbsence(tripId, payload) {
+  const { data } = await apiClient.post(`/trips/${encodeURIComponent(tripId)}/guardian-absences`, {
+    studentId: payload.studentId,
+    note: payload.note?.trim() || null,
+  })
   return data
 }
 export async function getMyGuardianLinks() { return (await apiClient.get('/stakeholders/me/guardian-links')).data }

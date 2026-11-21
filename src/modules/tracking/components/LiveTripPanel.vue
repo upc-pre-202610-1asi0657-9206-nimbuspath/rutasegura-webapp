@@ -15,6 +15,10 @@ import {
   incidentLabel,
   severityLabel,
   alertStatusLabel,
+  acknowledgeAlert,
+  resolveAlert,
+  tripTrack,
+  trackToGeometry,
 } from '../services/trackingService'
 const props = defineProps({
   tripId: { type: String, required: true },
@@ -101,7 +105,48 @@ async function details() {
     detailError.value =
       'No se pudo actualizar alguna fuente de incidencias/alertas. No equivale a ausencia de incidentes.'
 }
-watch(live, details)
+watch(live, () => {
+  void details()
+  void loadTrack()
+})
+const geometry = ref(null)
+let trackController
+async function loadTrack() {
+  trackController?.abort()
+  if (!live.value || denied.value || live.value.status === 'Scheduled') {
+    geometry.value = null
+    return
+  }
+  const request = (trackController = new AbortController())
+  try {
+    const data = await tripTrack(props.tripId, request.signal)
+    if (trackController === request) geometry.value = trackToGeometry(data)
+  } catch {
+    // The recorded track is supplementary; absence never fabricates a path.
+    if (trackController === request) geometry.value = null
+  }
+}
+const alertBusy = ref('')
+async function alertAction(alert, task, notice_) {
+  if (alertBusy.value) return
+  alertBusy.value = alert.id
+  actionError.value = ''
+  notice.value = ''
+  try {
+    await task(alert.id)
+    notice.value = notice_
+    detailsRunning = false
+    await details()
+    emit('changed')
+  } catch (e) {
+    actionError.value = apiError(e)
+  } finally {
+    alertBusy.value = ''
+  }
+}
+const acknowledge = (a) => alertAction(a, acknowledgeAlert, 'Alerta reconocida.')
+const resolveIncident = (a) => alertAction(a, resolveAlert, 'Incidente resuelto.')
+onBeforeUnmount(() => trackController?.abort())
 onBeforeUnmount(() => {
   ++detailsVersion
   detailsController?.abort()
@@ -188,6 +233,7 @@ const format = (value) =>
       <template v-if="isActiveTrip(live.status)">
         <RouteMap
           :points="points"
+          :geometry="geometry"
           label="Ubicación del vehículo y paradas autorizadas"
         />
         <p class="rs-hint">Azul: vehículo. Amarillo: paradas autorizadas.</p>
@@ -222,6 +268,12 @@ const format = (value) =>
             : 'Viaje finalizado o cancelado. El seguimiento de ubicación está detenido.'
         }}
       </p>
+      <RouteMap
+        v-if="!isActiveTrip(live.status) && geometry"
+        :points="[]"
+        :geometry="geometry"
+        label="Recorrido realizado del viaje"
+      />
       <section class="rs-panel rs-stack">
         <h3>
           {{ administrator ? 'Asistencia del viaje' : 'Estado de tu hijo' }}
@@ -280,6 +332,26 @@ const format = (value) =>
             <p class="rs-hint">
               {{ alertStatusLabel(a.status) }} · {{ format(a.occurredAt) }}
             </p>
+            <div class="rs-actions">
+              <button
+                v-if="a.status === 'OPEN'"
+                type="button"
+                class="rs-button-secondary"
+                :disabled="!!alertBusy"
+                @click="acknowledge(a)"
+              >
+                Reconocer
+              </button>
+              <button
+                v-if="a.status === 'OPEN' || a.status === 'ACKNOWLEDGED'"
+                type="button"
+                class="rs-button-primary"
+                :disabled="!!alertBusy"
+                @click="resolveIncident(a)"
+              >
+                Resolver incidente
+              </button>
+            </div>
           </article>
         </section></template
       >

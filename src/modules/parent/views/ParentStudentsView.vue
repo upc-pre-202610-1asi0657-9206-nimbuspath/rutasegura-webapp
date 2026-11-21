@@ -22,6 +22,7 @@ import {
   registerStudent,
   getParentProfile,
   getMyGuardianLinks,
+  updateStudent,
   uploadStudentPhoto,
   removeStudentPhoto,
   changeStudentPickup,
@@ -93,10 +94,16 @@ async function saveStudent() {
   busy.value = true;
   formError.value = "";
   try {
-    const payload = studentPayload(form.value);
-    if (mode.value === "pickup")
-      await changeStudentPickup(selected.value.id, payload.pickupLocation);
-    else await registerStudent(form.value);
+    if (mode.value === "edit") {
+      if (!form.value.firstName.trim() || !form.value.lastName.trim())
+        throw new Error("Ingresa los nombres y apellidos del alumno.");
+      await updateStudent(selected.value.id, form.value);
+    } else {
+      const payload = studentPayload(form.value);
+      if (mode.value === "pickup")
+        await changeStudentPickup(selected.value.id, payload.pickupLocation);
+      else await registerStudent(form.value);
+    }
     mode.value = "";
     notice.value =
       "Datos guardados. La revisión del vínculo y la inscripción se realizan por separado.";
@@ -106,6 +113,16 @@ async function saveStudent() {
   } finally {
     busy.value = false;
   }
+}
+function editStudent(s) {
+  // Prefilled only with the real data of the selected student.
+  form.value = {
+    firstName: s.firstName ?? "",
+    lastName: s.lastName ?? "",
+    birthDate: s.birthDate ? String(s.birthDate).slice(0, 10) : "",
+    schoolName: s.schoolName ?? "",
+  };
+  open("edit", s);
 }
 function editPickup(s) {
   form.value = {
@@ -320,6 +337,8 @@ onMounted(load);
             @click="openEnrollment(s)"
           >
             Inscribir a {{ s.firstName || s.fullName }}</button
+          ><button class="rs-button-secondary" :disabled="busy" @click="editStudent(s)">
+            Editar datos de {{ s.firstName || s.fullName }}</button
           ><button class="rs-button-secondary" @click="editPickup(s)">
             Editar recojo de {{ s.firstName || s.fullName }}</button
           ><button class="rs-button-secondary" @click="open('photo', s)">
@@ -404,6 +423,7 @@ onMounted(load);
       :title="
         {
           student: 'Registrar estudiante',
+          edit: 'Editar datos del estudiante',
           pickup: 'Editar ubicación de recojo',
           enroll: 'Inscribir en una ruta',
           photo: 'Foto privada del alumno',
@@ -435,6 +455,15 @@ onMounted(load);
           :disabled="busy"
         >
           {{ busy ? "Guardando…" : "Guardar estudiante" }}
+        </button>
+      </form>
+      <form v-if="mode === 'edit'" class="rs-stack" @submit.prevent="saveStudent">
+        <label>Nombres<input v-model="form.firstName" required :disabled="busy" /></label>
+        <label>Apellidos<input v-model="form.lastName" required :disabled="busy" /></label>
+        <label>Fecha de nacimiento<input v-model="form.birthDate" type="date" :disabled="busy" /></label>
+        <label>Colegio<input v-model="form.schoolName" :disabled="busy" /></label>
+        <button class="rs-button-primary" :disabled="busy">
+          {{ busy ? "Guardando…" : "Guardar cambios" }}
         </button>
       </form>
       <div v-if="mode === 'enroll'" class="rs-stack">
