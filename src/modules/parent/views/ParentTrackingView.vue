@@ -8,8 +8,7 @@ import {
   tripStatus,
   isActiveTrip,
 } from '@/modules/tracking/services/trackingService'
-import { getMyStudents } from '../services/parentService'
-import api from '@/shared/api/apiClient'
+import { getGuardianTrips, getMyStudents, reportGuardianAbsence } from '../services/parentService'
 import { apiError } from '@/shared/utils/forms'
 const date = ref(limaDay()),
   students = ref([]),
@@ -48,12 +47,7 @@ async function load(quiet = false) {
     const range = dayRange(date.value)
     const [children, result] = await Promise.all([
       getMyStudents(),
-      api
-        .get('/guardians/me/trips', {
-          params: range,
-          signal: controller.signal,
-        })
-        .then((r) => r.data),
+      getGuardianTrips(range.from, range.to, controller.signal),
     ])
     if (current !== version) return
     students.value = children
@@ -77,6 +71,42 @@ async function load(quiet = false) {
       loading.value = false
       running = false
     }
+  }
+}
+const absenceNote = ref(''),
+  absenceBusy = ref(false),
+  absenceNotice = ref(''),
+  absenceError = ref('')
+const selectedTrip = computed(
+  () => ownTrips.value.find((t) => t.tripId === tripId.value) ?? null,
+)
+const canReportAbsence = computed(
+  () =>
+    Boolean(selectedTrip.value && studentId.value) &&
+    !['Completed', 'Cancelled'].includes(selectedTrip.value.status),
+)
+watch([tripId, studentId], () => {
+  absenceNote.value = ''
+  absenceNotice.value = ''
+  absenceError.value = ''
+})
+async function submitAbsence() {
+  if (absenceBusy.value || !canReportAbsence.value) return
+  absenceBusy.value = true
+  absenceError.value = ''
+  absenceNotice.value = ''
+  try {
+    await reportGuardianAbsence(tripId.value, {
+      studentId: studentId.value,
+      note: absenceNote.value,
+    })
+    absenceNote.value = ''
+    absenceNotice.value = 'Inasistencia reportada.'
+    await load(true)
+  } catch (e) {
+    absenceError.value = apiError(e)
+  } finally {
+    absenceBusy.value = false
   }
 }
 function changeDate() {
@@ -181,5 +211,22 @@ onBeforeUnmount(() => {
       :student-id="studentId"
       :student-names="names"
     />
+    <form
+      v-if="canReportAbsence"
+      class="rs-panel rs-stack"
+      @submit.prevent="submitAbsence"
+    >
+      <h2>Reportar inasistencia</h2>
+      <AppFeedback v-if="absenceError" kind="error" :message="absenceError" />
+      <AppFeedback v-if="absenceNotice" kind="success" :message="absenceNotice" />
+      <label
+        >Motivo (opcional)<textarea
+          v-model="absenceNote"
+          :disabled="absenceBusy"
+      /></label>
+      <button class="rs-button-secondary" :disabled="absenceBusy">
+        {{ absenceBusy ? 'Enviando…' : 'Reportar inasistencia de ' + (names[studentId] || 'mi hijo') }}
+      </button>
+    </form>
   </div>
 </template>

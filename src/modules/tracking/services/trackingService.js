@@ -10,6 +10,32 @@ export const operationalAlerts = (signal) =>
   api
     .get('/operations/alerts', { signal, params: { onlyOpen: true } })
     .then((r) => r.data)
+export const acknowledgeAlert = (alertId) =>
+  api.post(`/operations/alerts/${encodeURIComponent(alertId)}/acknowledge`)
+export const resolveAlert = (alertId) =>
+  api.post(`/operations/alerts/${encodeURIComponent(alertId)}/resolve`)
+export const tripTrack = (id, signal) =>
+  api.get(`/trips/${id}/track`, { signal }).then((r) => r.data)
+// Builds a GeoJSON LineString from the real recorded track; returns null when fewer than 2 valid points exist.
+export function trackToGeometry(data) {
+  const raw = Array.isArray(data)
+    ? data
+    : data?.points || data?.positions || data?.coordinates || []
+  const coordinates = raw
+    .map((p) =>
+      Array.isArray(p)
+        ? [Number(p[1]), Number(p[0])]
+        : [Number(p?.longitude ?? p?.lng), Number(p?.latitude ?? p?.lat)],
+    )
+    .filter(
+      ([lng, lat]) =>
+        Number.isFinite(lng) &&
+        Number.isFinite(lat) &&
+        Math.abs(lat) <= 90 &&
+        Math.abs(lng) <= 180,
+    )
+  return coordinates.length > 1 ? { type: 'LineString', coordinates } : null
+}
 export function limaDay(date = new Date()) {
   const parts = new Intl.DateTimeFormat('en-CA', {
     timeZone: 'America/Lima',
