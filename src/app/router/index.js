@@ -22,6 +22,14 @@ const AdminResourcesView = () => import('@/modules/admin/views/AdminResourcesVie
 const AdminFamiliesView = () => import('@/modules/admin/views/AdminFamiliesView.vue')
 const AdminTripsView = () => import('@/modules/admin/views/AdminTripsView.vue')
 
+const NotificationsInboxView = () =>
+  import('@/modules/notifications/presentation/views/NotificationsInboxView.vue')
+
+const AdminAnnouncementsView = () =>
+  import('@/modules/notifications/presentation/views/AdminAnnouncementsView.vue')
+const AdminSubscriptionView = () =>
+  import('@/modules/subscription/presentation/views/AdminSubscriptionView.vue')
+
 const routes = [
   {
     path: '/',
@@ -70,6 +78,9 @@ const routes = [
         component: AdminResourcesView,
       },
       { path: 'families', name: 'admin-families', component: AdminFamiliesView },
+      { path: 'notifications', name: 'admin-notifications', component: NotificationsInboxView },
+      { path: 'announcements', name: 'admin-announcements', component: AdminAnnouncementsView },
+      { path: 'subscription', name: 'admin-subscription', component: AdminSubscriptionView },
       {
         path: 'trips',
         name: 'admin-trips',
@@ -103,6 +114,7 @@ const routes = [
         component: ParentRoutesView,
       },
       { path: 'tracking', name: 'parent-tracking', component: ParentTrackingView },
+      { path: 'notifications', name: 'parent-notifications', component: NotificationsInboxView },
       {
         path: 'history',
         name: 'parent-history',
