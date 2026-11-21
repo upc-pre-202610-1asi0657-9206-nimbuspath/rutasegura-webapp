@@ -11,6 +11,9 @@ import {
   deactivateRoute,
   releaseRouteResources,
   regenerateEnrollmentCode,
+  renameRoute,
+  changeRouteSchedule,
+  getRouteTripRecords,
 } from "../services/adminService";
 import {
   getOperationStudents,
@@ -53,6 +56,7 @@ async function load() {
       getRouteById(props.routeId),
       getOperationStudents(),
     ]);
+    syncRouteForms();
   } catch (e) {
     error.value = apiError(e);
   } finally {
@@ -128,7 +132,72 @@ async function confirmPending() {
   pending.value = null;
 }
 
-onMounted(load);
+// Name/schedule forms are initialized only from the route returned by the backend.
+const WEEK_DAYS = [
+  { value: "Monday", label: "Lun" },
+  { value: "Tuesday", label: "Mar" },
+  { value: "Wednesday", label: "Mié" },
+  { value: "Thursday", label: "Jue" },
+  { value: "Friday", label: "Vie" },
+  { value: "Saturday", label: "Sáb" },
+  { value: "Sunday", label: "Dom" },
+];
+const nameForm = ref(""),
+  scheduleForm = ref({ departureTime: "", estimatedArrivalTime: "", operatingDays: [] });
+function syncRouteForms() {
+  const schedule = route.value?.schedule;
+  nameForm.value = route.value?.name ?? "";
+  scheduleForm.value = {
+    departureTime: String(schedule?.departureTime ?? "").slice(0, 5),
+    estimatedArrivalTime: String(schedule?.estimatedArrivalTime ?? "").slice(0, 5),
+    operatingDays: Array.isArray(schedule?.operatingDays) ? [...schedule.operatingDays] : [],
+  };
+}
+function toggleOperatingDay(day) {
+  const days = scheduleForm.value.operatingDays;
+  scheduleForm.value.operatingDays = days.includes(day)
+    ? days.filter((d) => d !== day)
+    : [...days, day];
+}
+const canRename = computed(
+  () => nameForm.value.trim() && nameForm.value.trim() !== route.value?.name,
+);
+const canChangeSchedule = computed(
+  () =>
+    scheduleForm.value.departureTime &&
+    scheduleForm.value.estimatedArrivalTime &&
+    scheduleForm.value.operatingDays.length > 0,
+);
+const records = ref([]),
+  recordsLoading = ref(false),
+  recordsError = ref(""),
+  recordsLoaded = ref(false);
+async function loadRecords() {
+  recordsLoading.value = true;
+  recordsError.value = "";
+  try {
+    records.value = await getRouteTripRecords(props.routeId);
+    recordsLoaded.value = true;
+  } catch (e) {
+    recordsError.value = apiError(e);
+  } finally {
+    recordsLoading.value = false;
+  }
+}
+const recordId = (r, i) => r.tripId ?? r.id ?? i;
+const recordDate = (r) => r.serviceDate ?? r.completedAt ?? r.endedAt ?? r.startedAt ?? null;
+const recordDetails = (r) =>
+  Object.entries(r).filter(
+    ([k, v]) =>
+      !/(^id$|Id$)/.test(k) &&
+      !["serviceDate", "completedAt", "endedAt", "startedAt"].includes(k) &&
+      ["string", "number", "boolean"].includes(typeof v),
+  );
+
+onMounted(() => {
+  load();
+  loadRecords();
+});
 </script>
 <template>
   <AppFormDialog
@@ -141,6 +210,57 @@ onMounted(load);
       <AppFeedback v-if="error" kind="error" :message="error" />
       <AppFeedback v-if="notice" kind="success" :message="notice" />
       <template v-if="route">
+        <form
+          class="rs-panel rs-stack"
+          @submit.prevent="mutate(() => renameRoute(routeId, nameForm), 'Nombre de la ruta actualizado.')"
+        >
+          <h3>Nombre de la ruta</h3>
+          <label
+            >Nombre<input v-model="nameForm" required :disabled="busy"
+          /></label>
+          <button class="rs-button-secondary" :disabled="busy || !canRename">
+            Renombrar ruta
+          </button>
+        </form>
+        <form
+          class="rs-panel rs-stack"
+          @submit.prevent="mutate(() => changeRouteSchedule(routeId, { ...scheduleForm, timeZoneId: route.schedule?.timeZoneId }), 'Horario actualizado.')"
+        >
+          <h3>Horario</h3>
+          <label
+            >Salida<input v-model="scheduleForm.departureTime" type="time" required :disabled="busy"
+          /></label>
+          <label
+            >Llegada estimada<input v-model="scheduleForm.estimatedArrivalTime" type="time" required :disabled="busy"
+          /></label>
+          <fieldset class="rs-actions">
+            <legend>Días de operación</legend>
+            <label v-for="d in WEEK_DAYS" :key="d.value">
+              <input
+                type="checkbox"
+                :checked="scheduleForm.operatingDays.includes(d.value)"
+                :disabled="busy"
+                @change="toggleOperatingDay(d.value)"
+              />
+              {{ d.label }}
+            </label>
+          </fieldset>
+          <button class="rs-button-secondary" :disabled="busy || !canChangeSchedule">
+            Guardar horario
+          </button>
+        </form>
+        <section class="rs-panel rs-stack">
+          <h3>Historial de viajes completados</h3>
+          <AppFeedback v-if="recordsLoading" kind="loading" message="Cargando historial…" />
+          <AppFeedback v-if="recordsError" kind="error" :message="recordsError" retry-label="Volver a intentar" @retry="loadRecords" />
+          <p v-if="recordsLoaded && !records.length && !recordsError" class="rs-hint">
+            Esta ruta aún no tiene viajes completados.
+          </p>
+          <article v-for="(r, i) in records" :key="recordId(r, i)" class="rs-row">
+            <strong v-if="recordDate(r)">{{ new Date(recordDate(r)).toLocaleString("es-PE") }}</strong>
+            <p v-for="[k, v] in recordDetails(r)" :key="k" class="rs-hint">{{ k }}: {{ v }}</p>
+          </article>
+        </section>
         <RouteMap :points="stops" :geometry="route.itinerary?.geometry" />
         <p v-if="route.itinerary" class="rs-hint">
           {{ (route.itinerary.distanceMeters / 1000).toFixed(2) }} km ·

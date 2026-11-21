@@ -1,4 +1,12 @@
 import apiClient from '@/shared/api/apiClient'
+import {
+  acknowledgeAlert,
+  operationalAlerts,
+  resolveAlert,
+  tripLive,
+  tripPosition,
+  tripSummary,
+} from '@/modules/tracking/services/trackingService'
 
 export async function getOrganizationTrips({
   from,
@@ -39,36 +47,6 @@ export async function scheduleTrip(
   return data
 }
 
-export async function getTripLive(
-  tripId,
-) {
-  const { data } = await apiClient.get(
-    `/trips/${tripId}/live`,
-  )
-
-  return data
-}
-
-export async function getTripPosition(
-  tripId,
-) {
-  const { data } = await apiClient.get(
-    `/trips/${tripId}/position`,
-  )
-
-  return data
-}
-
-export async function getTripSummary(
-  tripId,
-) {
-  const { data } = await apiClient.get(
-    `/trips/${tripId}/summary`,
-  )
-
-  return data
-}
-
 export async function cancelTrip(
   tripId,
   reason,
@@ -80,3 +58,11 @@ export async function cancelTrip(
     },
   )
 }
+
+// Live-trip reads and operational alerts are owned by the tracking context; delegated, not duplicated.
+export const getTripLive = (tripId, signal) => tripLive(tripId, signal)
+export const getTripPosition = (tripId, signal) => tripPosition(tripId, signal)
+export const getTripSummary = (tripId, signal) => tripSummary(tripId, signal)
+export const getOpenAlerts = (signal) => operationalAlerts(signal)
+export const acknowledgeOperationalAlert = (alertId) => acknowledgeAlert(alertId)
+export const resolveOperationalAlert = (alertId) => resolveAlert(alertId)
