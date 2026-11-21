@@ -30,6 +30,9 @@ const AdminAnnouncementsView = () =>
 const AdminSubscriptionView = () =>
   import('@/modules/subscription/presentation/views/AdminSubscriptionView.vue')
 
+const AdminOrganizationView = () =>
+  import('@/modules/organization/presentation/views/AdminOrganizationView.vue')
+
 const routes = [
   {
     path: '/',
@@ -81,6 +84,7 @@ const routes = [
       { path: 'notifications', name: 'admin-notifications', component: NotificationsInboxView },
       { path: 'announcements', name: 'admin-announcements', component: AdminAnnouncementsView },
       { path: 'subscription', name: 'admin-subscription', component: AdminSubscriptionView },
+      { path: 'organization', name: 'admin-organization', component: AdminOrganizationView },
       {
         path: 'trips',
         name: 'admin-trips',
