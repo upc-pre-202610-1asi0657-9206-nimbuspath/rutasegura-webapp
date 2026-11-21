@@ -15,6 +15,8 @@ import {
   Route,
   ShieldCheck,
   Sparkles,
+  Megaphone,
+  CreditCard,
   Users,
   X,
 } from 'lucide-vue-next'
@@ -22,6 +24,7 @@ import {
 import { useModalFocus } from '@/shared/composables/useModalFocus'
 
 import { useAuthStore } from '@/modules/auth/stores/authStore'
+import NotificationBellMenu from '@/modules/notifications/presentation/components/NotificationBellMenu.vue'
 
 const auth = useAuthStore()
 const router = useRouter()
@@ -33,17 +36,19 @@ useModalFocus(mobileMenuOpen, drawerPanel)
 
 const fullName = computed(() => {
   const name = `${auth.user?.firstName ?? ''} ${auth.user?.lastName ?? ''}`.trim()
-  return name || 'Administrador'
+  return name || auth.user?.email || ''
 })
 
 const userInitials = computed(() => {
   const first = auth.user?.firstName?.[0] ?? ''
   const last = auth.user?.lastName?.[0] ?? ''
-  return `${first}${last}`.toUpperCase() || 'AD'
+  return `${first}${last}`.toUpperCase() || (auth.user?.email?.[0] ?? '').toUpperCase()
 })
 
 const items = [
   { label: 'Familias y alumnos', route: { name: 'admin-families' }, icon: Users },
+  { label: 'Comunicados', route: { name: 'admin-announcements' }, icon: Megaphone },
+  { label: 'Suscripción', route: { name: 'admin-subscription' }, icon: CreditCard },
   {
     label: 'Rutas escolares',
     route: {
@@ -188,7 +193,7 @@ async function logout() {
                 {{ fullName }}
               </strong>
               <span class="block truncate text-[11px] text-slate-400">
-                {{ auth.user?.email || 'admin@rutasegura.com' }}
+                {{ auth.user?.email }}
               </span>
             </div>
           </div>
@@ -307,6 +312,8 @@ async function logout() {
         </div>
 
         <div class="flex items-center gap-2">
+          <NotificationBellMenu inbox-route="admin-notifications" />
+
           <span class="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-100 text-xs font-bold text-slate-700 ring-1 ring-slate-200/80">
             {{ userInitials }}
           </span>
@@ -336,6 +343,8 @@ async function logout() {
         </div>
 
         <div class="flex items-center gap-3">
+          <NotificationBellMenu inbox-route="admin-notifications" />
+
           <div class="hidden items-center gap-2 rounded-full border border-emerald-200/80 bg-emerald-50/80 px-3 py-1 text-xs font-semibold text-emerald-700 xl:inline-flex">
             <span class="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
             Sesión administrativa
