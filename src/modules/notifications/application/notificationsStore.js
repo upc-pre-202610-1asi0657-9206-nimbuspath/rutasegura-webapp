@@ -41,7 +41,7 @@ export const useNotificationsStore = defineStore('notifications', {
       this.loading = true
       this.error = ''
       try {
-        const items = await fetchNotifications(request.signal)
+        const items = await fetchNotifications(undefined, request.signal)
         if (request.signal.aborted) return
         this.items = sortByNewest(items)
         this.loaded = true
@@ -61,7 +61,7 @@ export const useNotificationsStore = defineStore('notifications', {
         const page = await fetchNotificationPage(params, request.signal)
         if (request.signal.aborted) return
         this.items = sortByNewest(page.items)
-        this.pageMeta = page.meta
+        this.pageMeta = { nextCursor: page.nextCursor, hasMore: page.hasMore }
         this.loaded = true
       } catch (error) {
         if (error?.code === 'ERR_CANCELED') return
@@ -70,16 +70,31 @@ export const useNotificationsStore = defineStore('notifications', {
         if (controller === request) this.loading = false
       }
     },
+    async loadMore() {
+      if (this.loading || !this.pageMeta.hasMore || !this.pageMeta.nextCursor) return
+      this.loading = true
+      this.error = ''
+      try {
+        const page = await fetchNotificationPage({ cursor: this.pageMeta.nextCursor })
+        const known = new Set(this.items.map((item) => item.id))
+        this.items = sortByNewest([...this.items, ...page.items.filter((i) => !known.has(i.id))])
+        this.pageMeta = { nextCursor: page.nextCursor, hasMore: page.hasMore }
+      } catch (error) {
+        this.error = apiError(error, 'No fue posible cargar más notificaciones.')
+      } finally {
+        this.loading = false
+      }
+    },
     async markAsRead(id) {
       if (this.markingIds.includes(id)) return
       this.markingIds.push(id)
       this.error = ''
       try {
-        await markNotificationRead(id)
+        const updated = await markNotificationRead(id)
         const item = this.items.find((entry) => entry.id === id)
         if (item) {
           item.read = true
-          item.readAt = new Date().toISOString()
+          item.readAt = updated?.readAt ?? item.readAt
         }
       } catch (error) {
         this.error = apiError(error, 'No fue posible marcar la notificación como leída.')
@@ -94,8 +109,10 @@ export const useNotificationsStore = defineStore('notifications', {
       this.announcementError = ''
       this.announcementNotice = ''
       try {
-        await sendAnnouncement(payload)
-        this.announcementNotice = 'Comunicado enviado.'
+        const result = await sendAnnouncement(payload)
+        this.announcementNotice = Number.isFinite(result?.notificationsCreated)
+          ? `Comunicado enviado. Notificaciones creadas: ${result.notificationsCreated}.`
+          : 'Comunicado enviado.'
         return true
       } catch (error) {
         this.announcementError = apiError(error, 'No fue posible enviar el comunicado.')

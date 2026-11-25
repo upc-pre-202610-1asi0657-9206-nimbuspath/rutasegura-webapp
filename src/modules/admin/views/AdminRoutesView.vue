@@ -93,19 +93,16 @@ const days = [
   { value: 'Sunday', label: 'Dom' },
 ]
 
+// Time zone comes from the browser environment; all other fields start empty.
+const browserTimeZone = () => Intl.DateTimeFormat().resolvedOptions().timeZone || ''
+
 const form = reactive({
   name: '',
-  direction: 'PICKUP',
-  departureTime: '06:30',
-  estimatedArrivalTime: '07:30',
-  timeZoneId: 'America/Lima',
-  operatingDays: [
-    'Monday',
-    'Tuesday',
-    'Wednesday',
-    'Thursday',
-    'Friday',
-  ],
+  direction: '',
+  departureTime: '',
+  estimatedArrivalTime: '',
+  timeZoneId: browserTimeZone(),
+  operatingDays: [],
 })
 
 // ============================================================
@@ -279,17 +276,11 @@ function setWeekdaysPreset(includeSaturday = false) {
 
 function resetForm() {
   form.name = ''
-  form.direction = 'PICKUP'
-  form.departureTime = '06:30'
-  form.estimatedArrivalTime = '07:30'
-  form.timeZoneId = 'America/Lima'
-  form.operatingDays = [
-    'Monday',
-    'Tuesday',
-    'Wednesday',
-    'Thursday',
-    'Friday',
-  ]
+  form.direction = ''
+  form.departureTime = ''
+  form.estimatedArrivalTime = ''
+  form.timeZoneId = browserTimeZone()
+  form.operatingDays = []
   createError.value = ''
 }
 

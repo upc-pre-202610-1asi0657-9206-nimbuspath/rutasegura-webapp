@@ -43,8 +43,7 @@ export async function createRoute(payload) {
       ),
 
       timeZoneId:
-        payload.timeZoneId ||
-        'America/Lima',
+        payload.timeZoneId || null,
 
       operatingDays:
         payload.operatingDays,
