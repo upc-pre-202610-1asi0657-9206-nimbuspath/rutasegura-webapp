@@ -1,6 +1,6 @@
 <script setup>
-import { computed, reactive, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { computed, reactive, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 
 import {
   BusFront,
@@ -18,8 +18,11 @@ import {
 } from 'lucide-vue-next'
 
 import { useAuthStore } from '@/modules/auth/stores/authStore'
+import { roleHome } from '@/modules/auth/services/sessionLifecycle'
+import AppFeedback from '@/shared/components/AppFeedback.vue'
 
 const router = useRouter()
+const route = useRoute()
 const auth = useAuthStore()
 
 const form = reactive({
@@ -35,13 +38,21 @@ const touched = reactive({
 const showPassword = ref(false)
 const capsLock = ref(false)
 const loginMessage = ref('')
+const registered = ref(false)
 
-const roleRoutes = {
-  ADMIN: 'admin-home',
-  PARENT: 'parent-home',
-}
+watch(() => [route.query.registered, route.query.email], ([status, email]) => {
+  registered.value = status === '1'
+  if (registered.value && typeof email === 'string') {
+    form.email = email
+  }
+}, { immediate: true })
 
 const displayError = computed(() => loginMessage.value || auth.error)
+
+async function restoreSession() {
+  await auth.initialize({ retry: true })
+  if (auth.isAuthenticated) await router.replace({ name: roleHome(auth.userRole) })
+}
 
 const emailError = computed(() => {
   if (!touched.email) return ''
@@ -90,22 +101,11 @@ async function handleSubmit() {
       password: form.password,
     })
 
-    const role = String(auth.userRole ?? '').trim().toUpperCase()
-    const routeName = roleRoutes[role]
-
-    // The web application supports ADMIN and PARENT accounts.
-    // DRIVER accounts are intended for the RutaSegura mobile app.
-    if (!routeName || !router.hasRoute(routeName)) {
-      await auth.logout()
-
-      loginMessage.value = role === 'DRIVER'
-        ? 'Las cuentas de conductor deben ingresar desde la aplicación móvil de RutaSegura.'
-        : 'Tu cuenta no tiene un perfil habilitado para acceder a la plataforma web.'
-
-      return
-    }
-
-    await router.replace({ name: routeName })
+    if (!auth.isAuthenticated) return
+    const target = typeof route.query.redirect === 'string' ? router.resolve(route.query.redirect) : null
+    const allowed = target?.matched.some((record) => record.meta.requiresAuth) &&
+      target.matched.every((record) => !record.meta.roles || record.meta.roles.includes(auth.userRole))
+    await router.replace(allowed ? target.fullPath : { name: roleHome(auth.userRole) })
   } catch {
     // The authentication store handles login errors.
   }
@@ -113,7 +113,7 @@ async function handleSubmit() {
 </script>
 
 <template>
-  <main class="login-page grid min-h-dvh bg-slate-50 text-slate-900 selection:bg-blue-600 selection:text-white lg:h-dvh lg:grid-cols-12 lg:overflow-hidden">
+  <main id="main-content" tabindex="-1" class="login-page grid min-h-dvh bg-slate-50 text-slate-900 selection:bg-blue-600 selection:text-white lg:h-dvh lg:grid-cols-12 lg:overflow-hidden">
 
     <!-- ───────── LEFT PANEL: SMART TRANSIT DIORAMA ───────── -->
     <aside class="brand-panel relative hidden flex-col justify-between overflow-hidden border-r border-slate-800/80 bg-slate-950 text-white lg:col-span-6 lg:flex lg:h-dvh xl:col-span-7">
@@ -125,7 +125,7 @@ async function handleSubmit() {
       <!-- Brand Header -->
       <div class="reveal relative z-10 flex shrink-0 items-center justify-between" style="--d: 0ms">
         <div class="flex items-center gap-3">
-          <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-blue-700 text-white shadow-lg shadow-blue-500/25 ring-1 ring-white/20">
+          <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-brand-navy to-brand-navy-light text-white shadow-lg shadow-blue-500/25 ring-1 ring-white/20">
             <BusFront :size="21" aria-hidden="true" />
           </div>
           <div>
@@ -151,7 +151,7 @@ async function handleSubmit() {
 
         <h2 class="brand-title reveal font-bold tracking-tight" style="--d: 160ms">
           El transporte escolar,
-          <span class="bg-gradient-to-r from-amber-300 via-emerald-300 to-blue-400 bg-clip-text text-transparent">
+          <span class="bg-gradient-to-r from-amber-300 via-brand-yellow to-brand-navy-light bg-clip-text text-transparent">
             más cerca de tu familia.
           </span>
         </h2>
@@ -522,14 +522,14 @@ async function handleSubmit() {
 
         <span class="flex items-center gap-2 text-slate-300">
           <ShieldCheck :size="15" class="text-emerald-400" />
-          Acceso para usuarios autorizados
+           RutaSegura • Plataforma Escolar Segura 
         </span>
       </div>
 
     </aside>
 
     <!-- ───────── RIGHT PANEL: FRAMED AUTHENTICATION PORTAL ───────── -->
-    <section class="form-panel relative flex min-h-dvh flex-col justify-between overflow-hidden lg:col-span-6 lg:h-dvh xl:col-span-5">
+    <section class="form-panel relative flex min-h-dvh flex-col justify-between overflow-hidden lg:col-span-6 lg:h-dvh lg:overflow-y-auto xl:col-span-5">
 
       <!-- Ambient Right-Panel Background Landscape / Route Contours -->
       <div class="pointer-events-none absolute -right-24 -top-24 h-80 w-80 rounded-full bg-blue-500/[0.07] blur-3xl"></div>
@@ -589,7 +589,7 @@ async function handleSubmit() {
         <div class="auth-card relative overflow-hidden rounded-3xl border border-slate-200/90 bg-white/95 shadow-[0_24px_60px_-15px_rgba(15,23,42,0.09)] ring-1 ring-slate-900/[0.04] backdrop-blur-xl">
 
           <!-- Top Accent Gradient Bar on Card -->
-          <div class="h-1.5 w-full bg-gradient-to-r from-blue-600 via-sky-400 to-emerald-400"></div>
+          <div class="h-1.5 w-full bg-gradient-to-r from-brand-navy via-brand-yellow to-brand-navy-light"></div>
 
           <div class="auth-card-body">
             <header>
@@ -607,19 +607,15 @@ async function handleSubmit() {
               </p>
             </header>
 
-            <!-- Backend Error Banner -->
-            <div
-              v-if="displayError"
-              role="alert"
-              aria-live="assertive"
-              class="shake mt-5 flex items-start gap-3 rounded-xl border border-red-200 bg-red-50/90 px-4 py-3 text-sm text-red-800 shadow-xs"
-            >
-              <TriangleAlert :size="18" class="mt-0.5 shrink-0 text-red-600" aria-hidden="true" />
-              <p class="leading-snug">{{ displayError }}</p>
-            </div>
+            <AppFeedback v-if="registered" class="mt-5" kind="success" message="Tu cuenta se creó correctamente. Inicia sesión para continuar." />
+            <AppFeedback v-if="auth.sessionReason === 'expired'" class="mt-5" message="Tu sesión ha vencido. Inicia sesión nuevamente para continuar." />
+            <AppFeedback v-if="auth.sessionReason === 'invalid'" class="mt-5" kind="error" message="Tu cuenta no tiene acceso a esta plataforma." />
+            <AppFeedback v-if="displayError" class="mt-5" kind="error" :message="displayError"
+              :retry-label="auth.restoreUnavailable ? 'Reintentar conexión' : undefined" @retry="restoreSession" />
 
             <form
               class="auth-form"
+              :aria-busy="auth.loading"
               novalidate
               @submit.prevent="handleSubmit"
             >
@@ -760,6 +756,18 @@ async function handleSubmit() {
                 />
               </button>
 
+              <div class="register-link flex flex-wrap items-center justify-center gap-x-1.5 gap-y-1 text-center text-sm text-slate-500">
+                <span>¿No tienes una cuenta?</span>
+
+                <button
+                  type="button"
+                  class="rounded-md px-1 py-1 font-semibold text-blue-600 transition hover:text-blue-700 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 disabled:cursor-not-allowed disabled:opacity-60"
+                  :disabled="auth.loading"
+                  @click="router.push({ name: 'register' })"
+                >
+                  Regístrate
+                </button>
+              </div>
             </form>
 
             <!-- Help Card -->
@@ -788,7 +796,7 @@ async function handleSubmit() {
   padding: clamp(18px, 3.2dvh, 44px) clamp(24px, 3.5vw, 56px);
   background-image:
     radial-gradient(rgba(255, 255, 255, 0.06) 1px, transparent 1px),
-    linear-gradient(to bottom right, #020617, #0f172a 60%, #09152b);
+    linear-gradient(to bottom right, var(--rs-navy), var(--rs-navy-light) 60%, var(--rs-navy));
   background-size: 28px 28px, 100% 100%;
 }
 
@@ -829,11 +837,8 @@ async function handleSubmit() {
 /* Framed & Atmospheric Right Panel */
 .form-panel {
   padding: clamp(14px, 2.6dvh, 32px) clamp(20px, 3vw, 44px);
-  background-color: #f8fafc;
-  background-image:
-    radial-gradient(#cbd5e1 1px, transparent 1px),
-    linear-gradient(135deg, rgba(241, 245, 249, 0.85) 0%, rgba(255, 255, 255, 0.95) 50%, rgba(240, 253, 244, 0.5) 100%);
-  background-size: 24px 24px, 100% 100%;
+  background-color: var(--rs-background);
+  background-image: none;
   box-shadow: inset 12px 0 24px -12px rgba(15, 23, 42, 0.06);
 }
 

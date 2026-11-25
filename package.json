@@ -6,13 +6,18 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test:auth": "playwright test tests/browser/auth.spec.js",
+    "test": "playwright test",
+    "test:operations": "playwright test tests/browser/operations.spec.js",
+    "test:tracking": "playwright test tests/browser/tracking.spec.js"
   },
   "dependencies": {
     "@microsoft/signalr": "^11.0.0",
     "@primeuix/themes": "2.0.3",
     "@vue/devtools-api": "^8.2.1",
     "axios": "^1.21.1",
+    "leaflet": "1.9.4",
     "lucide-vue-next": "^1.0.0",
     "pinia": "^4.1.0",
     "primevue": "4.5.5",
@@ -20,6 +25,7 @@
     "vue-router": "^5.5.1"
   },
   "devDependencies": {
+    "@playwright/test": "1.62.1",
     "@tailwindcss/vite": "^4.3.5",
     "@vitejs/plugin-vue": "^6.0.10",
     "tailwindcss": "^4.3.5",

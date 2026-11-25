@@ -19,7 +19,7 @@ export async function signIn(credentials) {
   const { data } = await apiClient.post('/users/sign-in', {
     email: credentials.email.trim(),
     password: credentials.password,
-  })
+  }, { skipSession: true })
 
   return data
 }
@@ -29,6 +29,19 @@ export async function signIn(credentials) {
  */
 export async function getCurrentUser() {
   const { data } = await apiClient.get('/users/me')
+
+  return data
+}
+
+export async function signUp(payload) {
+  const { data } = await apiClient.post('/users', {
+    firstName: payload.firstName.trim(),
+    lastName: payload.lastName.trim(),
+    email: payload.email.trim(),
+    password: payload.password,
+    roleTier: 'PARENT',
+    organizationId: null,
+  }, { skipSession: true })
 
   return data
 }
