@@ -22,7 +22,7 @@ export async function fetchRouteQuota(signal) {
 }
 
 export async function requestPlanChange(planId) {
-  const { data } = await apiClient.post('/subscription/plan-changes', { planId })
+  const { data } = await apiClient.post('/subscription/plan-changes', { targetPlanId: planId })
   return createPlanChange(data)
 }
 

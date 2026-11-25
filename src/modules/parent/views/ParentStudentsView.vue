@@ -121,6 +121,7 @@ function editStudent(s) {
     lastName: s.lastName ?? "",
     birthDate: s.birthDate ? String(s.birthDate).slice(0, 10) : "",
     schoolName: s.schoolName ?? "",
+    schoolGrade: s.schoolGrade ?? "",
   };
   open("edit", s);
 }
@@ -462,6 +463,7 @@ onMounted(load);
         <label>Apellidos<input v-model="form.lastName" required :disabled="busy" /></label>
         <label>Fecha de nacimiento<input v-model="form.birthDate" type="date" :disabled="busy" /></label>
         <label>Colegio<input v-model="form.schoolName" :disabled="busy" /></label>
+        <label>Grado<input v-model="form.schoolGrade" :disabled="busy" /></label>
         <button class="rs-button-primary" :disabled="busy">
           {{ busy ? "Guardando…" : "Guardar cambios" }}
         </button>
