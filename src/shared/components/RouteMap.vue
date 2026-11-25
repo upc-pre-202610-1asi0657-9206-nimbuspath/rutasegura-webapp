@@ -6,6 +6,7 @@ import { validPoint } from "@/shared/utils/forms";
 const props = defineProps({
   points: { type: Array, default: () => [] },
   geometry: Object,
+  plannedGeometry: Object,
   selectable: Boolean,
   label: { type: String, default: "Mapa de paradas" },
 });
@@ -36,6 +37,15 @@ function render() {
       }).addTo(layer);
     } catch {
       /* Points remain usable; geometry is validated by the backend. */
+    }
+  }
+  if (props.plannedGeometry) {
+    try {
+      L.geoJSON(props.plannedGeometry, {
+        style: { color: "#6552A3", weight: 4, dashArray: "8 8" },
+      }).addTo(layer);
+    } catch {
+      /* The route markers remain available. */
     }
   }
   const bounds = layer.getBounds();
@@ -69,7 +79,7 @@ onMounted(() => {
   observer.observe(element.value);
   render();
 });
-watch(() => [props.points, props.geometry], render, { deep: true });
+watch(() => [props.points, props.geometry, props.plannedGeometry], render, { deep: true });
 onBeforeUnmount(() => {
   observer?.disconnect();
   map?.remove();

@@ -178,6 +178,16 @@ async function setup(
           },
         ],
       })
+    if (path === `/trips/${trip}/operational-details`)
+      return ok({
+        students: [{ studentId: child, fullName: 'Lucía Demo' }],
+        itinerary: {
+          geometry: {
+            type: 'LineString',
+            coordinates: [[-77.03, -12.12], [-77.026, -12.118], [-77.018, -12.11]],
+          },
+        },
+      })
     if (path === '/operations/alerts')
       return ok([
         {
@@ -340,6 +350,8 @@ test('admin confirms SOS in Tracking without body and sees incidents/alerts sepa
     page.getByText('SOS activo', { exact: true }).last(),
   ).toBeVisible()
   await expect(page.getByText('Unidad detenida')).toBeVisible()
+  await expect(page.getByText('Lucía Demo', { exact: true })).toBeVisible()
+  await expect(page.getByText(/Violeta discontinuo: itinerario previsto/)).toBeVisible()
   await expect(page.getByText('Proyección de emergencia')).toBeVisible()
   await page.getByRole('button', { name: 'Atender y cerrar SOS' }).click()
   await page.getByRole('button', { name: 'Confirmar cierre de SOS' }).click()

@@ -132,6 +132,7 @@ async function fixture(page, role = "ADMIN", settings = {}) {
     }
     const current = state.routes[0];
     if (path === `/routes/${routeId}` && method === "GET") return ok(current);
+    if (path === `/routes/${routeId}/trip-records` && method === "GET") return ok([]);
     if (path === `/routes/${routeId}/stops` && method === "POST") {
       current.stops.push({
         ...body,

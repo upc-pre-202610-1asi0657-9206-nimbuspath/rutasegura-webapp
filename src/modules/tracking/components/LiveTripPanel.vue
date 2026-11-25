@@ -18,6 +18,7 @@ import {
   acknowledgeAlert,
   resolveAlert,
   tripTrack,
+  tripOperationalDetails,
   trackToGeometry,
 } from '../services/trackingService'
 const props = defineProps({
@@ -47,6 +48,49 @@ const passengers = computed(() =>
 const hasStudentAccess = computed(
   () => props.administrator || passengers.value.length > 0,
 )
+const operation = ref(null)
+const operationError = ref(false)
+let operationRequest, operationKey, loadedAt = 0
+const passengerNames = computed(() => new Map(
+  (operation.value?.students || []).map((student) => [student.studentId, student.fullName]),
+))
+const plannedGeometry = computed(() => operation.value?.itinerary?.geometry || null)
+async function loadOperation(force = false) {
+  if (!props.administrator || !live.value || denied.value) {
+    operationRequest?.abort()
+    operationRequest = undefined
+    operation.value = null
+    operationKey = undefined
+    operationError.value = false
+    return
+  }
+  const key = JSON.stringify([
+    props.tripId,
+    (live.value.passengers || []).map((p) => p.studentId),
+    (live.value.stops || []).map((s) => [s.stopId, s.latitude, s.longitude]),
+  ])
+  if (operationKey === key && !force &&
+      (operationRequest || Date.now() - loadedAt < 30_000)) return
+  if (operationKey !== key) operation.value = null
+  operationRequest?.abort()
+  operationKey = key
+  const request = (operationRequest = new AbortController())
+  operationError.value = false
+  try {
+    const data = await tripOperationalDetails(props.tripId, request.signal)
+    if (operationRequest === request) operation.value = data
+  } catch {
+    if (operationRequest === request) {
+      operation.value = null
+      operationError.value = true
+    }
+  } finally {
+    if (operationRequest === request) {
+      loadedAt = Date.now()
+      operationRequest = undefined
+    }
+  }
+}
 const points = computed(() => {
   if (!isActiveTrip(live.value?.status)) return []
   const allowedStops = new Set(passengers.value.map((p) => p.stopId))
@@ -105,15 +149,12 @@ async function details() {
     detailError.value =
       'No se pudo actualizar alguna fuente de incidencias/alertas. No equivale a ausencia de incidentes.'
 }
-watch(live, () => {
-  void details()
-  void loadTrack()
-})
 const geometry = ref(null)
 let trackController
 async function loadTrack() {
   trackController?.abort()
-  if (!live.value || denied.value || live.value.status === 'Scheduled') {
+  if (!props.administrator || !live.value || denied.value || live.value.status === 'Scheduled') {
+    trackController = undefined
     geometry.value = null
     return
   }
@@ -126,6 +167,11 @@ async function loadTrack() {
     if (trackController === request) geometry.value = null
   }
 }
+watch([live, denied, () => props.tripId, () => props.administrator], () => {
+  void details()
+  void loadTrack()
+  void loadOperation()
+}, { immediate: true })
 const alertBusy = ref('')
 async function alertAction(alert, task, notice_) {
   if (alertBusy.value) return
@@ -147,6 +193,10 @@ async function alertAction(alert, task, notice_) {
 const acknowledge = (a) => alertAction(a, acknowledgeAlert, 'Alerta reconocida.')
 const resolveIncident = (a) => alertAction(a, resolveAlert, 'Incidente resuelto.')
 onBeforeUnmount(() => trackController?.abort())
+onBeforeUnmount(() => {
+  operationRequest?.abort()
+  operationRequest = undefined
+})
 onBeforeUnmount(() => {
   ++detailsVersion
   detailsController?.abort()
@@ -234,9 +284,16 @@ const format = (value) =>
         <RouteMap
           :points="points"
           :geometry="geometry"
+          :planned-geometry="plannedGeometry"
           label="Ubicación del vehículo y paradas autorizadas"
         />
         <p class="rs-hint">Azul: vehículo. Amarillo: paradas autorizadas.</p>
+        <p v-if="administrator && plannedGeometry" class="rs-hint">
+          Violeta discontinuo: itinerario previsto. La línea azul, cuando aparece, muestra el recorrido GPS.
+        </p>
+        <p v-else-if="administrator && operation && !plannedGeometry" class="rs-hint">
+          Este viaje no tiene un itinerario vial disponible para sus paradas.
+        </p>
         <p v-if="!position" class="rs-hint" role="status">
           Sin ubicación GPS disponible. No se muestra una posición estimada o
           ficticia.
@@ -269,10 +326,11 @@ const format = (value) =>
         }}
       </p>
       <RouteMap
-        v-if="!isActiveTrip(live.status) && geometry"
+        v-if="!isActiveTrip(live.status) && (geometry || plannedGeometry)"
         :points="[]"
         :geometry="geometry"
-        label="Recorrido realizado del viaje"
+        :planned-geometry="plannedGeometry"
+        label="Mapa del viaje"
       />
       <section class="rs-panel rs-stack">
         <h3>
@@ -281,14 +339,23 @@ const format = (value) =>
         <p v-if="!passengers.length" class="rs-hint">
           No hay datos de asistencia autorizados para esta selección.
         </p>
+        <p v-if="administrator && operationError" class="rs-hint" role="status">
+          No se pudo consultar el padrón y el itinerario.
+          <button type="button" class="rs-button-secondary" @click="loadOperation(true)">
+            Reintentar
+          </button>
+        </p>
+        <p v-else-if="administrator && !operation && passengers.length" class="rs-hint" role="status">
+          Consultando los nombres del padrón…
+        </p>
         <article
-          v-for="(p, index) in passengers"
+          v-for="p in passengers"
           :key="p.studentId"
           class="rs-row"
         >
           <strong>{{
-            studentNames[p.studentId] ||
-            (administrator ? 'Alumno ' + (index + 1) : 'Alumno seleccionado')
+            passengerNames.get(p.studentId) || studentNames[p.studentId] ||
+            (administrator ? 'Nombre no disponible' : 'Alumno seleccionado')
           }}</strong><span class="rs-badge">{{
             passengerStatus(p.status)
           }}</span>

@@ -16,6 +16,8 @@ export const resolveAlert = (alertId) =>
   api.post(`/operations/alerts/${encodeURIComponent(alertId)}/resolve`)
 export const tripTrack = (id, signal) =>
   api.get(`/trips/${id}/track`, { signal }).then((r) => r.data)
+export const tripOperationalDetails = (id, signal) =>
+  api.get(`/trips/${id}/operational-details`, { signal }).then((r) => r.data)
 // Builds a GeoJSON LineString from the real recorded track; returns null when fewer than 2 valid points exist.
 export function trackToGeometry(data) {
   const raw = Array.isArray(data)
