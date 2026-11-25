@@ -76,6 +76,7 @@ export async function updateStudent(studentId, payload) {
     firstName: payload.firstName.trim(),
     lastName: payload.lastName.trim(),
     birthDate: payload.birthDate || null,
+    schoolGrade: payload.schoolGrade?.trim() || null,
     schoolName: payload.schoolName?.trim() || null,
   })
   return data

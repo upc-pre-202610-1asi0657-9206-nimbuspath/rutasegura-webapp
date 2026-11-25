@@ -38,7 +38,7 @@ export function createOrganization(dto) {
       key,
       label: fieldLabel(key),
       value,
-      editable: !READ_ONLY_PATTERN.test(key) && typeof value !== 'boolean',
+      editable: key === 'name',
     }))
   return { id: id === null ? null : String(id), fields }
 }
@@ -60,15 +60,9 @@ export function validateOrganizationForm(form) {
   return { valid: !Object.keys(errors).length, errors }
 }
 
-// Sends the edited fields, trimmed; empty strings are sent as null only if the server returned null.
-export function toPayload(form, organization) {
-  const original = Object.fromEntries(organization.fields.map((field) => [field.key, field.value]))
-  return Object.fromEntries(
-    Object.entries(form).map(([key, value]) => {
-      const text = typeof value === 'string' ? value.trim() : value
-      return [key, text === '' && original[key] === null ? null : text]
-    }),
-  )
+// UpdateOrganizationResource only accepts { name }.
+export function toPayload(form) {
+  return { name: String(form.name ?? '').trim() }
 }
 
 export const isDirty = (form, organization) => {

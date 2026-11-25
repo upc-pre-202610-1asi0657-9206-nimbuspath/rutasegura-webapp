@@ -80,5 +80,15 @@ onMounted(reload)
         </button>
       </li>
     </ul>
+
+    <button
+      v-if="store.pageMeta.hasMore"
+      type="button"
+      class="mt-3 w-full rounded-xl border border-slate-200 bg-white py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-60"
+      :disabled="store.loading"
+      @click="store.loadMore()"
+    >
+      Cargar más
+    </button>
   </section>
 </template>
