@@ -119,9 +119,9 @@ onMounted(() => {
         <li v-for="delivery in store.failedDeliveries" :key="delivery.id" class="flex items-start gap-3 py-3">
           <div class="min-w-0 flex-1 text-xs text-slate-600">
             <strong v-if="delivery.channel" class="block text-sm font-semibold text-slate-900">{{ delivery.channel }}</strong>
-            <p v-if="delivery.recipient">Destinatario: {{ delivery.recipient }}</p>
+            <p v-if="delivery.status">Estado: {{ delivery.status }}</p>
             <p v-if="delivery.reason" class="text-red-700">{{ delivery.reason }}</p>
-            <p v-if="delivery.attempts !== null">Intentos: {{ delivery.attempts }}</p>
+            <p v-if="delivery.attempts !== null">Intentos: {{ delivery.attempts }}<span v-if="delivery.replays"> · Reintentos manuales: {{ delivery.replays }}</span></p>
             <span v-if="delivery.failedAt" class="text-slate-400">{{ formatDate(delivery.failedAt) }}</span>
           </div>
           <button

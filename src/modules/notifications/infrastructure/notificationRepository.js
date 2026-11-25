@@ -5,12 +5,13 @@ import {
   createNotificationPage,
 } from '../domain/notification'
 
-export async function fetchNotifications(signal) {
-  const { data } = await apiClient.get('/notifications', { signal })
+// GET /notifications?offset&limit&unreadOnly (server defaults apply when omitted)
+export async function fetchNotifications(params, signal) {
+  const { data } = await apiClient.get('/notifications', { params, signal })
   return createNotificationPage(data).items
 }
 
-// `params` are forwarded as provided by the caller (e.g. paging cursors returned by the backend).
+// GET /notifications/page?cursor&limit&unreadOnly -> { items, nextCursor, hasMore }
 export async function fetchNotificationPage(params, signal) {
   const { data } = await apiClient.get('/notifications/page', { params, signal })
   return createNotificationPage(data)
@@ -25,19 +26,31 @@ export async function fetchNotification(notificationId, signal) {
 }
 
 export async function markNotificationRead(notificationId) {
-  await apiClient.patch(`/notifications/${encodeURIComponent(notificationId)}/read`)
+  const { data } = await apiClient.patch(
+    `/notifications/${encodeURIComponent(notificationId)}/read`,
+  )
+  return createNotification(data)
 }
 
+// requestId is the idempotency key required by CreateAnnouncementResource.
 export async function sendAnnouncement(payload) {
-  const { data } = await apiClient.post('/announcements', payload)
+  const { data } = await apiClient.post('/announcements', {
+    requestId: crypto.randomUUID(),
+    ...payload,
+  })
   return data
 }
 
-export async function fetchFailedDeliveries(signal) {
-  const { data } = await apiClient.get('/notifications/deliveries/failed', { signal })
+export async function fetchFailedDeliveries(params, signal) {
+  const { data } = await apiClient.get('/notifications/deliveries/failed', { params, signal })
   return createDeliveryList(data)
 }
 
+// ReplayNotificationDeliveryResource: { requestId, reasonCode? } -> { deliveryId, replayId, scheduled }
 export async function replayDelivery(deliveryId) {
-  await apiClient.post(`/notifications/deliveries/${encodeURIComponent(deliveryId)}/replay`)
+  const { data } = await apiClient.post(
+    `/notifications/deliveries/${encodeURIComponent(deliveryId)}/replay`,
+    { requestId: crypto.randomUUID() },
+  )
+  return data
 }

@@ -1,35 +1,32 @@
-// Domain: pure functions, no Vue / Axios. Maps backend DTOs into the shape the UI consumes.
-// No fabricated defaults: absent fields stay null.
+// Domain: pure functions, no Vue / Axios.
+// Shapes follow docs/notifications_docs_json.md (NotificationResource, NotificationPageResource,
+// NotificationDeliveryResource, CreateAnnouncementResource). No fabricated defaults.
 
 const pick = (...values) => values.find((value) => value !== undefined && value !== null) ?? null
 
 export function createNotification(dto) {
-  if (!dto || typeof dto !== 'object') return null
-  const id = pick(dto.notificationId, dto.id)
-  if (id === null) return null
-  const readAt = pick(dto.readAt)
-  const explicitRead = pick(dto.isRead, dto.read)
+  if (!dto || typeof dto !== 'object' || !dto.id) return null
   return {
-    id: String(id),
-    title: pick(dto.title, dto.subject),
-    message: pick(dto.message, dto.body, dto.content),
-    type: pick(dto.type, dto.category, dto.context),
-    createdAt: pick(dto.createdAt, dto.occurredAt, dto.sentAt),
-    readAt,
-    read: explicitRead !== null ? Boolean(explicitRead) : readAt !== null,
+    id: String(dto.id),
+    title: pick(dto.title),
+    message: pick(dto.body),
+    type: pick(dto.category),
+    priority: pick(dto.priority),
+    tripId: pick(dto.tripId),
+    studentId: pick(dto.studentId),
+    createdAt: pick(dto.occurredAt, dto.createdAt),
+    readAt: pick(dto.readAt),
+    read: dto.readAt != null,
   }
 }
 
-// Accepts a bare array or a paged envelope; keeps any paging metadata the backend returns untouched.
+// NotificationPageResource: { items, nextCursor, hasMore }. A bare array is accepted for /notifications.
 export function createNotificationPage(data) {
-  const rawItems = Array.isArray(data)
-    ? data
-    : pick(data?.items, data?.content, data?.results, data?.data) ?? []
-  const meta = Array.isArray(data) || !data ? {} : { ...data }
-  for (const key of ['items', 'content', 'results', 'data']) delete meta[key]
+  const raw = Array.isArray(data) ? data : data?.items ?? []
   return {
-    items: rawItems.map(createNotification).filter(Boolean),
-    meta,
+    items: raw.map(createNotification).filter(Boolean),
+    nextCursor: Array.isArray(data) ? null : pick(data?.nextCursor),
+    hasMore: Array.isArray(data) ? false : Boolean(data?.hasMore),
   }
 }
 
@@ -43,34 +40,30 @@ export function sortByNewest(items) {
 
 // ───────── Announcements & failed deliveries (admin) ─────────
 
-// Validates only presence; the backend remains the authority on limits and audiences.
+// CreateAnnouncementResource: { requestId, title, body, routeId? }. requestId is added by the repository.
 export function validateAnnouncement(form) {
   const title = String(form?.title ?? '').trim()
-  const message = String(form?.message ?? '').trim()
+  const body = String(form?.message ?? '').trim()
   const errors = {}
   if (!title) errors.title = 'Ingresa un título.'
-  if (!message) errors.message = 'Ingresa el mensaje del comunicado.'
-  return { valid: !Object.keys(errors).length, errors, payload: { title, message } }
+  if (!body) errors.message = 'Ingresa el mensaje del comunicado.'
+  return { valid: !Object.keys(errors).length, errors, payload: { title, body } }
 }
 
+// NotificationDeliveryResource
 export function createDelivery(dto) {
-  if (!dto || typeof dto !== 'object') return null
-  const id = pick(dto.deliveryId, dto.id)
-  if (id === null) return null
+  if (!dto || typeof dto !== 'object' || !dto.id) return null
   return {
-    id: String(id),
+    id: String(dto.id),
     notificationId: pick(dto.notificationId),
-    channel: pick(dto.channel, dto.provider),
-    recipient: pick(dto.recipient, dto.recipientId, dto.userId),
-    reason: pick(dto.failureReason, dto.error, dto.reason, dto.lastError),
-    attempts: pick(dto.attempts, dto.attemptCount),
-    failedAt: pick(dto.failedAt, dto.lastAttemptAt, dto.updatedAt, dto.createdAt),
+    channel: pick(dto.channel),
+    status: pick(dto.status),
+    reason: pick(dto.lastErrorCode),
+    attempts: pick(dto.attemptCount),
+    replays: pick(dto.replayCount),
+    failedAt: pick(dto.lastAttemptAt, dto.createdAt),
   }
 }
 
-export function createDeliveryList(data) {
-  const raw = Array.isArray(data)
-    ? data
-    : pick(data?.items, data?.content, data?.results, data?.data) ?? []
-  return raw.map(createDelivery).filter(Boolean)
-}
+export const createDeliveryList = (data) =>
+  (Array.isArray(data) ? data : []).map(createDelivery).filter(Boolean)
