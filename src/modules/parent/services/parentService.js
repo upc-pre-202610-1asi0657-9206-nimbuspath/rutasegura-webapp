@@ -32,6 +32,12 @@ export async function deleteStudent(studentId) {
   await apiClient.delete(`/stakeholders/me/students/${studentId}`)
 }
 
+export async function getAvailableRoutes() {
+  const { data } = await apiClient.get('/stakeholders/route-offers')
+
+  return data
+}
+
 export async function getRouteOffer(enrollmentCode) {
   const { data } = await apiClient.get(
     `/stakeholders/route-offers/${encodeURIComponent(enrollmentCode.trim())}`,

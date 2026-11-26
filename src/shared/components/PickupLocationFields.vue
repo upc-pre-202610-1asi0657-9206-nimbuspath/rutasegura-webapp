@@ -3,6 +3,16 @@ import { computed, onBeforeUnmount, ref, useId, watch } from "vue";
 import RouteMap from "./RouteMap.vue";
 import { validPoint } from "@/shared/utils/forms";
 const model = defineModel({ required: true });
+defineProps({
+  legend: { type: String, default: "Ubicación de recojo" },
+  mapLabel: { type: String, default: "Elegir ubicación de recojo" },
+  confirmLabel: {
+    type: String,
+    default:
+      "Confirmo que este punto y la dirección corresponden al lugar de recojo.",
+  },
+  showReference: { type: Boolean, default: true },
+});
 const id = useId(),
   error = ref(""),
   locating = ref(false);
@@ -64,7 +74,7 @@ function locate() {
 </script>
 <template>
   <fieldset class="rs-stack">
-    <legend>Ubicación de recojo</legend>
+    <legend>{{ legend }}</legend>
     <label :for="`${id}-address`"
       >Dirección<input
         :id="`${id}-address`"
@@ -74,7 +84,7 @@ function locate() {
         maxlength="200"
         autocomplete="street-address"
     /></label>
-    <label :for="`${id}-reference`"
+    <label v-if="showReference" :for="`${id}-reference`"
       >Referencia (opcional)<input
         :id="`${id}-reference`"
         v-model="model.reference"
@@ -92,7 +102,7 @@ function locate() {
     <RouteMap
       :points="points"
       selectable
-      label="Elegir ubicación de recojo"
+      :label="mapLabel"
       @select="choose"
     />
     <div class="rs-grid">
@@ -122,8 +132,7 @@ function locate() {
         type="checkbox"
         required
         :disabled="!points.length || !model.address?.trim()"
-      />Confirmo que este punto y la dirección corresponden al lugar de
-      recojo.</label
+      />{{ confirmLabel }}</label
     >
   </fieldset>
 </template>
