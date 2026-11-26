@@ -8,6 +8,24 @@ function normalizeTime(value) {
     : value
 }
 
+function destinationPayload(destination) {
+  return {
+    name: destination.name.trim(),
+    address: destination.address.trim(),
+    latitude: Number(destination.latitude),
+    longitude: Number(destination.longitude),
+  }
+}
+
+export async function setRouteDestination(routeId, destination) {
+  const { data } = await apiClient.put(
+    `/routes/${encodeURIComponent(routeId)}/destination`,
+    destinationPayload(destination),
+  )
+
+  return data
+}
+
 // ============================================================
 // ROUTES
 // ============================================================
@@ -47,6 +65,10 @@ export async function createRoute(payload) {
 
       operatingDays:
         payload.operatingDays,
+
+      destination: payload.destination
+        ? destinationPayload(payload.destination)
+        : null,
     },
   )
 
