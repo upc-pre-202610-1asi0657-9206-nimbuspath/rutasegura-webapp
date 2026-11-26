@@ -1,5 +1,6 @@
 <script setup>
 import AppFeedback from '@/shared/components/AppFeedback.vue'
+import AvailableRoutes from '@/modules/parent/components/AvailableRoutes.vue'
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import {
@@ -375,6 +376,9 @@ onMounted(loadRoutes)
       </article>
     </section>
 
+    <div class="rs-panel mt-7">
+      <AvailableRoutes />
+    </div>
   </div>
 </template>
 

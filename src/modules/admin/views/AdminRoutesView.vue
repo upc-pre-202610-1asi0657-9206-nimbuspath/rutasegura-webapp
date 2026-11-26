@@ -1,9 +1,13 @@
 <script setup>
 import RoutePlanEditor from '@/modules/admin/components/RoutePlanEditor.vue'
+import DestinationFields from '@/shared/components/DestinationFields.vue'
+import { validPoint } from '@/shared/utils/forms'
+import { getEnrollments } from '@/modules/admin/services/administrationService'
 import { useModalFocus } from '@/shared/composables/useModalFocus'
 import AppFeedback from '@/shared/components/AppFeedback.vue'
 import {
   computed,
+  onBeforeUnmount,
   onMounted,
   reactive,
   ref,
@@ -83,6 +87,48 @@ const activatingRouteId = ref(null)
 // ROUTE FORM
 // ============================================================
 
+const emptyDestination = () => ({
+  name: '',
+  address: '',
+  latitude: '',
+  longitude: '',
+  locationConfirmed: false,
+})
+const destination = ref(emptyDestination())
+const newDriverId = ref('')
+const newVehicleId = ref('')
+
+// ============================================================
+// ENROLLED STUDENTS (families enroll them; the list refreshes itself)
+// ============================================================
+
+const enrollments = ref([])
+const enrollmentsError = ref('')
+const studentsOf = (routeId) =>
+  enrollments.value.filter((item) => item.routeId === routeId)
+
+async function loadEnrollments() {
+  try {
+    const data = await getEnrollments(undefined, true)
+    enrollments.value = Array.isArray(data) ? data : []
+    enrollmentsError.value = ''
+  } catch (err) {
+    enrollmentsError.value = 'No se pudo consultar a los alumnos inscritos.'
+  }
+}
+
+let refreshTimer = null
+async function refreshEnrollments() {
+  if (document.hidden || loading.value) return
+  try {
+    const data = await getAdminRoutes()
+    if (Array.isArray(data)) routes.value = data
+  } catch (err) {
+    return
+  }
+  await loadEnrollments()
+}
+
 const days = [
   { value: 'Monday', label: 'Lun' },
   { value: 'Tuesday', label: 'Mar' },
@@ -116,6 +162,10 @@ const canCreate = computed(() => {
     form.departureTime &&
     form.estimatedArrivalTime &&
     form.operatingDays.length > 0 &&
+    newDriverId.value &&
+    newVehicleId.value &&
+    destination.value.name.trim() &&
+    destination.value.locationConfirmed &&
     !creating.value
   )
 })
@@ -246,6 +296,7 @@ async function loadRoutes() {
     quota.value = quotaData ?? null
     drivers.value = Array.isArray(driverData) ? driverData : []
     vehicles.value = Array.isArray(vehicleData) ? vehicleData : []
+    await loadEnrollments()
   } catch (err) {
 
     error.value = backendErrorMessage(
@@ -282,6 +333,9 @@ function resetForm() {
   form.timeZoneId = browserTimeZone()
   form.operatingDays = []
   createError.value = ''
+  destination.value = emptyDestination()
+  newDriverId.value = ''
+  newVehicleId.value = ''
 }
 
 function openCreateModal() {
@@ -298,19 +352,44 @@ function closeCreateModal() {
 async function submitRoute() {
   if (!canCreate.value) return
 
+  if (!validPoint(destination.value.latitude, destination.value.longitude)) {
+    createError.value = 'Selecciona un punto de destino válido.'
+    createErrorKey.value++
+    return
+  }
+
   creating.value = true
   createError.value = ''
 
   try {
-    const route = await createRoute({
+    let route = await createRoute({
       ...form,
       operatingDays: [...form.operatingDays],
+      destination: destination.value,
     })
+
+    let assignmentFailure = ''
+    try {
+      route = await assignRouteResources(
+        route.id,
+        newDriverId.value,
+        newVehicleId.value
+      )
+    } catch (err) {
+      // The route already exists: keep it and let the administrator retry from its card.
+      assignmentFailure = backendErrorMessage(
+        err,
+        'No fue posible asignar los recursos.'
+      )
+    }
 
     createdRoute.value = route
     showCreateModal.value = false
 
     await loadRoutes()
+    if (assignmentFailure) {
+      actionError.value = `La ruta se creó, pero sin conductor ni vehículo: ${assignmentFailure}`
+    }
   } catch (err) {
 
     createError.value = backendErrorMessage(
@@ -422,7 +501,15 @@ async function copyEnrollmentCode(code) {
   }
 }
 
-onMounted(loadRoutes)
+onMounted(() => {
+  loadRoutes()
+  refreshTimer = window.setInterval(refreshEnrollments, 15000)
+  window.addEventListener('focus', refreshEnrollments)
+})
+onBeforeUnmount(() => {
+  window.clearInterval(refreshTimer)
+  window.removeEventListener('focus', refreshEnrollments)
+})
 </script>
 
 <template>
@@ -651,7 +738,7 @@ onMounted(loadRoutes)
               </div>
 
               <p class="mt-0.5 text-sm text-slate-600">
-                <strong class="font-semibold text-slate-900">{{ createdRoute.name }}</strong> ya está disponible como borrador. Comparte este código con las familias o asigna sus recursos abajo:
+                <strong class="font-semibold text-slate-900">{{ createdRoute.name }}</strong> ya está disponible como borrador. Las familias pueden verla e inscribir a sus hijos con este código:
               </p>
 
               <div
@@ -810,7 +897,7 @@ onMounted(loadRoutes)
               </span>
             </div>
 
-            <button type="button" class="rs-button-secondary mt-3" @click="editingRouteId = routeItem.id">Editar paradas y mapa</button>
+            <button type="button" class="rs-button-secondary mt-3" @click="editingRouteId = routeItem.id">Destino, alumnos e itinerario</button>
 
             <!-- Metrics Grid: Horario & Estudiantes -->
             <div class="mt-5 grid gap-3 sm:grid-cols-2">
@@ -839,6 +926,18 @@ onMounted(loadRoutes)
                 </p>
               </div>
             </div>
+
+            <ul
+              v-if="studentsOf(routeItem.id).length"
+              class="mt-3 space-y-1 rounded-2xl border border-slate-200/70 bg-slate-50/70 p-3.5 text-sm text-slate-800"
+              :aria-label="`Alumnos de ${routeItem.name}`"
+            >
+              <li v-for="student in studentsOf(routeItem.id)" :key="student.enrollmentId">
+                <strong>{{ student.fullName }}</strong>
+                <span class="text-xs text-slate-500"> · {{ student.stop?.name || 'Sin parada' }}</span>
+              </li>
+            </ul>
+            <p v-if="enrollmentsError" class="rs-error mt-3">{{ enrollmentsError }}</p>
 
             <!-- Operating Days Pills -->
             <div class="mt-3 rounded-2xl border border-slate-200/70 bg-slate-50/70 p-3.5">
@@ -1376,6 +1475,32 @@ onMounted(loadRoutes)
                   {{ day.label }}
                 </button>
               </div>
+            </div>
+
+            <div class="rs-dialog-content rs-stack !p-0">
+              <label
+                >Conductor<select v-model="newDriverId" required>
+                  <option value="" disabled>Selecciona un conductor</option>
+                  <option v-for="driver in verifiedDrivers" :key="driver.id" :value="driver.id">
+                    {{ driver.firstName }} {{ driver.lastName }} — Lic. {{ driver.licenseCategory }}
+                  </option>
+                </select></label
+              >
+              <p v-if="!verifiedDrivers.length" class="rs-hint">
+                No hay conductores verificados. Regístralos en Conductores y vehículos.
+              </p>
+              <label
+                >Vehículo<select v-model="newVehicleId" required>
+                  <option value="" disabled>Selecciona un vehículo</option>
+                  <option v-for="vehicle in enabledVehicles" :key="vehicle.id" :value="vehicle.id">
+                    {{ vehicle.licensePlate }} — {{ vehicle.brand }} {{ vehicle.model }} ({{ vehicle.seatingCapacity }} asientos)
+                  </option>
+                </select></label
+              >
+              <p v-if="!enabledVehicles.length" class="rs-hint">
+                No hay vehículos habilitados.
+              </p>
+              <DestinationFields v-model="destination" :direction="form.direction" />
             </div>
 
             <div class="flex items-center justify-between rounded-2xl border border-slate-200/80 bg-slate-50/80 px-4 py-3">

@@ -123,7 +123,9 @@ async function fixture(page, role = "ADMIN", settings = {}) {
         id: routeId,
         ...body,
         schedule: body,
-        stops: [],
+        stops: body.destination
+          ? [{ ...body.destination, id: id(21), sequence: 1, studentIds: [], origin: "DESTINATION" }]
+          : [],
         status: "DRAFT",
         studentCount: 0,
       };
@@ -133,6 +135,8 @@ async function fixture(page, role = "ADMIN", settings = {}) {
     const current = state.routes[0];
     if (path === `/routes/${routeId}` && method === "GET") return ok(current);
     if (path === `/routes/${routeId}/trip-records` && method === "GET") return ok([]);
+    if (path === `/stakeholders/routes/${routeId}/students`)
+      return ok(state.enrollments);
     if (path === `/routes/${routeId}/stops` && method === "POST") {
       current.stops.push({
         ...body,
@@ -228,13 +232,14 @@ async function fixture(page, role = "ADMIN", settings = {}) {
           "base64",
         ),
       });
+    if (path === "/stakeholders/route-offers") return ok(state.openRoutes || []);
     if (path.startsWith("/stakeholders/route-offers/"))
       return ok({
         routeId,
         routeName: "Ruta Sur",
         organizationName: "Operación de prueba",
         direction: "PICKUP",
-        status: "ACTIVE",
+        status: state.offerStatus || "ACTIVE",
         acceptsEnrollments: true,
         availableSeats: 3,
         departureTime: "06:30:00",
@@ -298,21 +303,12 @@ async function fixture(page, role = "ADMIN", settings = {}) {
   });
   return state;
 }
-async function location(page, address = "Casa confirmada") {
+async function location(page, address = "Casa confirmada", scope = page) {
+  page = scope;
   await page.getByLabel("Dirección", { exact: true }).fill(address);
   await page.getByLabel("Latitud", { exact: true }).fill("-12.123456");
   await page.getByLabel("Longitud", { exact: true }).fill("-77.012345");
   await page.getByRole("checkbox", { name: /Confirmo que este punto/ }).check();
-}
-async function newStop(page, name) {
-  await page.getByLabel("Nombre de parada", { exact: true }).fill(name);
-  await location(page, name + " dirección");
-  await page
-    .getByRole("button", { name: "Guardar parada", exact: true })
-    .click();
-  await expect(
-    page.getByLabel("Nombre de parada", { exact: true }),
-  ).toHaveValue("");
 }
 const readyRoute = () => ({
   id: routeId,
@@ -430,7 +426,7 @@ test("vehicle availability and capacity use independent authorized endpoints", a
   });
 });
 
-test("new route can acquire stops, itinerary, assignment and activation entirely from web", async ({
+test("route is created with driver, vehicle and destination; enrolled children appear on their own", async ({
   page,
 }) => {
   const state = await fixture(page, "ADMIN", {
@@ -448,41 +444,105 @@ test("new route can acquire stops, itinerary, assignment and activation entirely
   });
   await page.goto("/admin/routes");
   await page.getByRole("button", { name: "Nueva ruta", exact: true }).click();
-  await page.getByLabel("Nombre de la ruta").fill("Ruta nueva");
+  const dialog = page.getByRole("dialog");
+  await dialog.getByLabel("Nombre de la ruta").fill("Ruta nueva");
+  await dialog.getByRole("button", { name: /Ida al colegio/ }).click();
+  await dialog.getByLabel("Hora de salida").fill("06:30");
+  await dialog.getByLabel("Llegada estimada").fill("07:30");
+  await dialog.getByRole("button", { name: "Lun–Vie" }).click();
+  await dialog.getByLabel("Conductor").selectOption(id(11));
+  await dialog.getByLabel("Vehículo").selectOption(id(12));
+  const create = dialog.getByRole("button", { name: "Crear ruta", exact: true });
+  await dialog.getByLabel("Nombre del destino").fill("Colegio");
+  await expect(create).toBeDisabled();
+  await location(page, "Colegio dirección");
+  await create.click();
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  expect(
+    state.calls.find((c) => c.path === "/routes" && c.method === "POST").body
+      .destination,
+  ).toEqual({
+    name: "Colegio",
+    address: "Colegio dirección",
+    latitude: -12.123456,
+    longitude: -77.012345,
+  });
+  expect(
+    state.calls.find((c) => c.path.endsWith("/assignment")).body,
+  ).toEqual({ driverId: id(11), vehicleId: id(12) });
+
+  // A family enrolls a child: the open page picks it up when it regains focus.
+  state.enrollments.push({
+    enrollmentId: id(30),
+    routeId,
+    studentId,
+    fullName: "Ana Prueba",
+    enrollmentStatus: "ACTIVE",
+    stop: { name: "Casa" },
+  });
+  state.routes[0].stops.unshift({
+    id: id(20),
+    name: "Casa",
+    sequence: 1,
+    latitude: -12.1,
+    longitude: -77.02,
+    studentIds: [studentId],
+    origin: "ENROLLMENT",
+  });
+  await page.evaluate(() => window.dispatchEvent(new Event("focus")));
+  await expect(
+    page.getByRole("list", { name: "Alumnos de Ruta nueva" }),
+  ).toContainText("Ana Prueba");
+
   await page
-    .getByRole("dialog")
-    .getByRole("button", { name: "Crear ruta", exact: true })
+    .getByRole("button", { name: "Destino, alumnos e itinerario" })
     .click();
-  await page.getByRole("button", { name: "Editar paradas y mapa" }).click();
-  await newStop(page, "Casa");
-  await newStop(page, "Colegio");
+  await expect(
+    page.getByRole("region", { name: "Alumnos inscritos" }),
+  ).toContainText("Ana Prueba");
+  await expect(page.getByRole("button", { name: "Subir Colegio" })).toHaveCount(1);
+  await expect(page.getByRole("button", { name: "Subir Colegio" })).toBeDisabled();
+  await expect(page.getByRole("button", { name: "Asignar alumno" })).toHaveCount(0);
   await page
     .getByRole("button", { name: "Calcular itinerario vial", exact: true })
     .click();
   await expect(page.getByText(/2.20 km/)).toBeVisible();
-  await page.getByRole("button", { name: "Subir Colegio" }).click();
-  await expect(
-    page.getByText("Sin itinerario vial calculado.", { exact: false }),
-  ).toBeVisible();
+});
+
+test("parent picks a listed draft route and enrolls the child", async ({
+  page,
+}) => {
+  const state = await fixture(page, "PARENT", {
+    offerStatus: "DRAFT",
+    openRoutes: [
+      {
+        routeId,
+        enrollmentCode: "SUR12345",
+        routeName: "Ruta Sur",
+        destinationName: "Colegio de prueba",
+        organizationName: "Operación de prueba",
+        direction: "PICKUP",
+        availableSeats: 3,
+        departureTime: "06:30:00",
+        estimatedArrivalTime: "07:30:00",
+      },
+    ],
+  });
+  await page.goto("/parent/students");
+  await page
+    .getByRole("button", { name: "Inscribir a Ana", exact: true })
+    .click();
+  const list = page.getByRole("region", { name: "Rutas disponibles" });
+  await expect(list).toContainText("SUR12345");
+  await expect(list).toContainText("Colegio de prueba");
+  await list.getByRole("button", { name: "Elegir Ruta Sur" }).click();
+  await page.getByRole("button", { name: "Confirmar inscripción" }).click();
+  await expect(page.getByText("Inscripción registrada")).toBeVisible();
   expect(
-    state.calls.find((c) => c.path.endsWith("/stops/order")).body.stopIds,
-  ).toEqual([id(21), id(20)]);
-  await page
-    .getByRole("button", { name: "Cerrar ventana", exact: true })
-    .click();
-  await page
-    .getByRole("button", { name: /Asignar recursos/ })
-    .first()
-    .click();
-  await page.getByLabel("Conductor verificado").selectOption(id(11));
-  await page.getByLabel("Vehículo habilitado").selectOption(id(12));
-  await page
-    .getByRole("dialog")
-    .getByRole("button", { name: "Asignar recursos", exact: true })
-    .click();
-  await page.getByRole("button", { name: "Activar ruta", exact: true }).click();
-  await expect(page.getByText("Activa", { exact: true })).toBeVisible();
-  expect(state.routes[0].stops).toHaveLength(2);
+    state.calls.find(
+      (c) => c.method === "POST" && c.path.endsWith("/enrollments"),
+    ).body.enrollmentCode,
+  ).toBe("SUR12345");
 });
 
 test("provider failure stays explicit; editing/removing stops does not manufacture geometry", async ({
@@ -509,7 +569,7 @@ test("provider failure stays explicit; editing/removing stops does not manufactu
   ];
   const state = await fixture(page, "ADMIN", { routes: [r], failMaps: true });
   await page.goto("/admin/routes");
-  await page.getByRole("button", { name: "Editar paradas y mapa" }).click();
+  await page.getByRole("button", { name: "Destino, alumnos e itinerario" }).click();
   await page.getByRole("button", { name: "Calcular itinerario vial" }).click();
   await expect(page.getByRole("alert")).toContainText(
     "Proveedor de mapas no disponible",
@@ -517,7 +577,11 @@ test("provider failure stays explicit; editing/removing stops does not manufactu
   expect(state.routes[0].itinerary).toBeUndefined();
   await page.getByRole("button", { name: "Editar Casa", exact: true }).click();
   await page.getByLabel("Nombre de parada").fill("Casa corregida");
-  await location(page);
+  await location(
+    page,
+    "Casa confirmada",
+    page.locator("form").filter({ hasText: "Editar parada" }),
+  );
   await page.getByRole("button", { name: "Guardar parada" }).click();
   await expect(
     page.getByRole("button", { name: "Editar Casa corregida", exact: true }),
@@ -813,7 +877,7 @@ for (const width of [320, 390, 1440])
     responsiveState.routes.push(readyRoute());
     for (const section of ['resources','routes']) {
       await page.goto(`/admin/${section}`);
-      await expect(page.getByRole('button', {name:section === 'resources' ? 'Suspender conductor' : 'Editar paradas y mapa',exact:true})).toBeVisible();
+      await expect(page.getByRole('button', {name:section === 'resources' ? 'Suspender conductor' : 'Destino, alumnos e itinerario',exact:true})).toBeVisible();
       expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBeTruthy();
       await page.screenshot({path:`test-results/${section}-${width}.png`,fullPage:true});
     }
@@ -845,40 +909,6 @@ test("route assignment conflict is shown without discarding the selected resourc
   );
   await expect(page.getByLabel("Conductor verificado")).toHaveValue(id(11));
   expect(state.calls.some((c) => c.path.endsWith("/activate"))).toBeFalsy();
-});
-
-test("stop assignment uses the operation roster and the actual stop and student identifiers", async ({
-  page,
-}) => {
-  const r = readyRoute();
-  r.stops = [
-    {
-      id: id(20),
-      name: "Casa",
-      sequence: 1,
-      latitude: -12.1,
-      longitude: -77.02,
-      studentIds: [],
-    },
-  ];
-  const state = await fixture(page, "ADMIN", {
-    routes: [r],
-    roster: [{ studentId, fullName: "Ana Prueba", status: "ACTIVE" }],
-  });
-  await page.goto("/admin/routes");
-  await page.getByRole("button", { name: "Editar paradas y mapa" }).click();
-  await page.getByLabel("Alumno del padrón").selectOption(studentId);
-  await page.getByLabel("Parada", { exact: true }).selectOption(id(20));
-  await page
-    .getByRole("button", { name: "Asignar alumno", exact: true })
-    .click();
-  await expect(
-    page.getByRole("button", { name: "Quitar del plan" }),
-  ).toBeVisible();
-  expect(
-    state.calls.find((c) => c.method === "PUT" && c.path.includes("/students/"))
-      .path,
-  ).toBe(`/routes/${routeId}/stops/${id(20)}/students/${studentId}`);
 });
 
 test("pending contact recovery survives reload and is cleared on logout", async ({

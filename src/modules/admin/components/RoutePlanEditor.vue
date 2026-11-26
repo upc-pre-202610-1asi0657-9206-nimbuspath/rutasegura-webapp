@@ -5,6 +5,7 @@ import AppFormDialog from "@/shared/components/AppFormDialog.vue";
 import AppFeedback from "@/shared/components/AppFeedback.vue";
 import RouteMap from "@/shared/components/RouteMap.vue";
 import PickupLocationFields from "@/shared/components/PickupLocationFields.vue";
+import DestinationFields from "@/shared/components/DestinationFields.vue";
 import { apiError, validPoint } from "@/shared/utils/forms";
 import {
   getRouteById,
@@ -14,14 +15,13 @@ import {
   renameRoute,
   changeRouteSchedule,
   getRouteTripRecords,
+  setRouteDestination,
 } from "../services/adminService";
 import {
-  getOperationStudents,
-  addStop,
+  getRouteStudents,
   updateStop,
   removeStop,
   reorderStops,
-  assignStudent,
   unassignStudent,
   calculateItinerary,
 } from "../services/administrationService";
@@ -33,9 +33,7 @@ const route = ref(null),
   busy = ref(false),
   error = ref(""),
   notice = ref("");
-const editing = ref(null),
-  selectedStop = ref(""),
-  selectedStudent = ref("");
+const editing = ref(null);
 const empty = () => ({
   name: "",
   address: "",
@@ -48,15 +46,31 @@ const stop = ref(empty());
 const stops = computed(() =>
   [...(route.value?.stops || [])].sort((a, b) => a.sequence - b.sequence),
 );
+const destination = ref(empty());
+const currentDestination = computed(() =>
+  stops.value.find((s) => s.origin === "DESTINATION"),
+);
+// The destination always stays at its end of the route; only the other stops are reordered.
+const canMove = (index, delta) => {
+  const from = stops.value[index],
+    to = stops.value[index + delta];
+  return (
+    !!to && from.origin !== "DESTINATION" && to.origin !== "DESTINATION"
+  );
+};
+const studentName = (id) =>
+  students.value.find((s) => s.studentId === id)?.fullName ||
+  "Alumno asignado";
 async function load() {
   loading.value = true;
   error.value = "";
   try {
     [route.value, students.value] = await Promise.all([
       getRouteById(props.routeId),
-      getOperationStudents(),
+      getRouteStudents(props.routeId),
     ]);
     syncRouteForms();
+    syncDestination();
   } catch (e) {
     error.value = apiError(e);
   } finally {
@@ -92,6 +106,29 @@ function edit(s) {
     longitude: s.longitude,
   };
 }
+function syncDestination() {
+  const d = currentDestination.value;
+  destination.value = d
+    ? {
+        ...empty(),
+        name: d.name,
+        address: d.address || "",
+        latitude: d.latitude,
+        longitude: d.longitude,
+      }
+    : empty();
+}
+async function saveDestination() {
+  const d = destination.value;
+  if (!validPoint(d.latitude, d.longitude) || !d.locationConfirmed) {
+    error.value = "Confirma las coordenadas y dirección del destino.";
+    return;
+  }
+  await mutate(
+    () => setRouteDestination(props.routeId, d),
+    "Destino guardado. Vuelve a calcular el itinerario cuando termines los cambios.",
+  );
+}
 async function saveStop() {
   if (
     !validPoint(stop.value.latitude, stop.value.longitude) ||
@@ -107,8 +144,7 @@ async function saveStop() {
     longitude: Number(stop.value.longitude),
   };
   await mutate(async () => {
-    if (editing.value) await updateStop(props.routeId, editing.value, payload);
-    else await addStop(props.routeId, payload);
+    await updateStop(props.routeId, editing.value, payload);
     editing.value = null;
     stop.value = empty();
   }, "Parada guardada. El itinerario anterior quedó invalidado; vuelve a calcularlo cuando termines los cambios.");
@@ -261,6 +297,27 @@ onMounted(() => {
             <p v-for="[k, v] in recordDetails(r)" :key="k" class="rs-hint">{{ k }}: {{ v }}</p>
           </article>
         </section>
+        <form class="rs-panel rs-stack" @submit.prevent="saveDestination">
+          <h3>Destino</h3>
+          <p v-if="!currentDestination" class="rs-hint">
+            Esta ruta aún no tiene destino. Las familias no la verán en su lista
+            hasta que lo indiques y asignes conductor y vehículo.
+          </p>
+          <DestinationFields v-model="destination" :direction="route.direction" />
+          <button class="rs-button-secondary" :disabled="busy">
+            Guardar destino
+          </button>
+        </form>
+        <section class="rs-panel rs-stack" aria-label="Alumnos inscritos">
+          <h3>Alumnos inscritos</h3>
+          <p v-if="!students.length" class="rs-hint">
+            Aparecerán aquí cuando las familias los inscriban.
+          </p>
+          <p v-for="s in students" :key="s.studentId">
+            <strong>{{ s.fullName }}</strong> ·
+            {{ s.stop?.name || "Sin parada" }}
+          </p>
+        </section>
         <RouteMap :points="stops" :geometry="route.itinerary?.geometry" />
         <p v-if="route.itinerary" class="rs-hint">
           {{ (route.itinerary.distanceMeters / 1000).toFixed(2) }} km ·
@@ -285,12 +342,13 @@ onMounted(() => {
           Calcular itinerario vial
         </button>
         <p v-if="stops.length < 2" class="rs-hint">
-          Agrega al menos dos paradas para calcular el itinerario.
+          El itinerario necesita el destino y al menos un alumno inscrito en otro
+          punto.
         </p>
         <section class="rs-stack">
           <h3>Paradas en orden</h3>
           <p v-if="!stops.length" class="rs-hint">
-            Agrega la primera parada para preparar la ruta desde cero.
+            Las paradas se crean solas con el destino y las inscripciones.
           </p>
           <article v-for="(s, index) in stops" :key="s.id" class="rs-row">
             <strong>{{ index + 1 }}. {{ s.name }}</strong>
@@ -299,6 +357,7 @@ onMounted(() => {
             </p>
             <div class="rs-actions">
               <button
+                v-if="s.origin !== 'DESTINATION'"
                 type="button"
                 class="rs-button-secondary"
                 :disabled="busy"
@@ -308,7 +367,7 @@ onMounted(() => {
               ><button
                 type="button"
                 class="rs-button-secondary"
-                :disabled="busy || index === 0"
+                :disabled="busy || !canMove(index, -1)"
                 :aria-label="`Subir ${s.name}`"
                 @click="move(index, -1)"
               >
@@ -316,7 +375,7 @@ onMounted(() => {
               ><button
                 type="button"
                 class="rs-button-secondary"
-                :disabled="busy || index === stops.length - 1"
+                :disabled="busy || !canMove(index, 1)"
                 :aria-label="`Bajar ${s.name}`"
                 @click="move(index, 1)"
               >
@@ -324,7 +383,9 @@ onMounted(() => {
               ><button
                 type="button"
                 class="rs-button-secondary"
-                :disabled="busy || !!s.studentIds?.length"
+                :disabled="
+                  busy || !!s.studentIds?.length || s.origin === 'DESTINATION'
+                "
                 @click="
                   ask('Eliminar parada vacía', () => removeStop(routeId, s.id))
                 "
@@ -337,10 +398,7 @@ onMounted(() => {
               :key="sid"
               class="rs-actions"
             >
-              <span>{{
-                students.find((st) => st.studentId === sid)?.fullName ||
-                "Alumno asignado"
-              }}</span
+              <span>{{ studentName(sid) }}</span
               ><button
                 class="rs-button-secondary"
                 :disabled="busy"
@@ -356,8 +414,12 @@ onMounted(() => {
             </div>
           </article>
         </section>
-        <form class="rs-panel rs-stack" @submit.prevent="saveStop">
-          <h3>{{ editing ? "Editar parada" : "Agregar parada" }}</h3>
+        <form
+          v-if="editing"
+          class="rs-panel rs-stack"
+          @submit.prevent="saveStop"
+        >
+          <h3>Editar parada</h3>
           <label
             >Nombre de parada<input
               v-model="stop.name"
@@ -368,7 +430,6 @@ onMounted(() => {
             <button class="rs-button-primary" :disabled="busy">
               Guardar parada</button
             ><button
-              v-if="editing"
               class="rs-button-secondary"
               type="button"
               @click="
@@ -379,42 +440,6 @@ onMounted(() => {
               Cancelar edición
             </button>
           </div>
-        </form>
-        <form
-          class="rs-panel rs-stack"
-          @submit.prevent="
-            mutate(() => assignStudent(routeId, selectedStop, selectedStudent))
-          "
-        >
-          <h3>Asignar alumno a una parada</h3>
-          <p class="rs-hint">
-            El padrón está limitado a tu operación. Esta asignación no verifica
-            tutela ni crea una inscripción.
-          </p>
-          <label
-            >Alumno del padrón<select v-model="selectedStudent" required>
-              <option value="" disabled>Selecciona un alumno</option>
-              <option
-                v-for="s in students.filter((s) => s.status === 'ACTIVE')"
-                :key="s.studentId"
-                :value="s.studentId"
-              >
-                {{ s.fullName }}
-              </option>
-            </select></label
-          ><label
-            >Parada<select v-model="selectedStop" aria-label="Parada" required>
-              <option value="" disabled>Selecciona una parada</option>
-              <option v-for="s in stops" :key="s.id" :value="s.id">
-                {{ s.sequence }} · {{ s.name }}
-              </option>
-            </select></label
-          ><button
-            class="rs-button-secondary"
-            :disabled="busy || !selectedStop || !selectedStudent"
-          >
-            Asignar alumno
-          </button>
         </form>
         <section class="rs-panel rs-stack">
           <h3>Publicación y recursos</h3>

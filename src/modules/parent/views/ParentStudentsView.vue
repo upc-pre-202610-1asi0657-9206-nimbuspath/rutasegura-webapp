@@ -7,6 +7,7 @@ import AppConfirmDialog from "@/shared/components/AppConfirmDialog.vue";
 import StudentFields from "@/shared/components/StudentFields.vue";
 import PickupLocationFields from "@/shared/components/PickupLocationFields.vue";
 import PrivateStudentPhoto from "@/shared/components/PrivateStudentPhoto.vue";
+import AvailableRoutes from "../components/AvailableRoutes.vue";
 import {
   apiError,
   emptyStudent,
@@ -170,9 +171,13 @@ const canEnroll = computed(
     !busy.value &&
     profile.value?.isComplete &&
     offer.value?.acceptsEnrollments &&
-    offer.value?.status === "ACTIVE" &&
     searchedCode.value === code.value.trim(),
 );
+function chooseRoute(enrollmentCode) {
+  code.value = enrollmentCode;
+  invalidateOffer();
+  return search();
+}
 async function enroll() {
   if (!canEnroll.value) return;
   busy.value = true;
@@ -469,6 +474,7 @@ onMounted(load);
         </button>
       </form>
       <div v-if="mode === 'enroll'" class="rs-stack">
+        <AvailableRoutes selectable :disabled="busy" @select="chooseRoute" />
         <form class="rs-stack" @submit.prevent="search">
           <label
             >Código de inscripción<input
@@ -489,6 +495,9 @@ onMounted(load);
             {{ offer.departureTime?.slice(0, 5) }}–{{
               offer.estimatedArrivalTime?.slice(0, 5)
             }}
+          </p>
+          <p v-if="offer.destinationName">
+            Destino: {{ offer.destinationName }}
           </p>
           <p>
             {{
