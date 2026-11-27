@@ -18,7 +18,20 @@ async function setup(page, { permission = 'default', contexts = [organization], 
   const user = { id: userId, firstName: 'Familia', lastName: 'Prueba', roleTier: 'PARENT', organizationId: null }
   const expiry = Buffer.from(JSON.stringify({ exp: Math.floor(Date.now() / 1000) + 3600 })).toString('base64url')
   const token = `test.${expiry}.fixture`
-  const state = { registrations: [], deletions: [], notice: null, pageCalls: 0 }
+  const state = { registrations: [], deletions: [], notice: null, pageCalls: 0, sockets: [], closed: 0, requests: [] }
+  await page.route('**/hubs/notifications/negotiate**', route => route.fulfill({ json: {
+    negotiateVersion: 1, connectionId: 'notification-connection', connectionToken: 'notification-token',
+    availableTransports: [{ transport: 'WebSockets', transferFormats: ['Text', 'Binary'] }],
+  } }))
+  await page.routeWebSocket('**/hubs/notifications**', ws => {
+    state.sockets.push(ws)
+    ws.onClose(() => state.closed++)
+    ws.onMessage(data => {
+      for (const frame of String(data).split('\u001e').filter(Boolean)) {
+        if (JSON.parse(frame).protocol) ws.send('{}\u001e')
+      }
+    })
+  })
   await page.addInitScript(({ user, token, permission }) => {
     sessionStorage.setItem('rutasegura.auth.session', JSON.stringify({ user, token }))
     window.pushTest = { permission, permissionRequests: 0, registrations: [], shown: [], removed: 0, token: localStorage.getItem('fixture-next-fcm-token') || 'fixture-fcm-token' }
@@ -59,6 +72,7 @@ async function setup(page, { permission = 'default', contexts = [organization], 
   await page.route('**/api/v1/**', async route => {
     const request = route.request()
     const path = new URL(request.url()).pathname.replace('/api/v1', '')
+    state.requests.push({ path, headers: request.headers() })
     if (path === '/users/me') return route.fulfill({ json: user })
     if (path === '/notifications/contexts') return route.fulfill({ json: { organizationIds: contexts } })
     if (path.startsWith('/push-subscriptions/') && request.method() === 'PUT') {
@@ -70,6 +84,9 @@ async function setup(page, { permission = 'default', contexts = [organization], 
       return route.fulfill({ status: 204 })
     }
     if (path === '/notifications/page') {
+      if (new URL(request.url()).searchParams.get('unreadOnly') === 'true') {
+        return route.fulfill({ json: { items: state.notice ? [state.notice] : [], nextCursor: null, hasMore: false } })
+      }
       state.pageCalls++
       const cursor = new URL(request.url()).searchParams.get('cursor')
       return route.fulfill({ json: {
@@ -224,4 +241,62 @@ test('notification settings fit a mobile viewport', async ({ page }) => {
   await expect(page.getByLabel('Empresa de tus notificaciones')).toBeVisible()
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
   await page.screenshot({ path: 'test-results/notification-settings-mobile.png', fullPage: true })
+})
+
+test('SignalR updates the inbox without requesting push permission and deduplicates repeated hints', async ({ page }) => {
+  const { state } = await setup(page, { permission: 'denied' })
+  await page.goto('/parent/notifications')
+  await expect.poll(() => state.sockets.length).toBeGreaterThan(0)
+  state.notice = { id: noticeId, title: 'Aviso en vivo', body: 'Recibido por la bandeja', occurredAt: new Date().toISOString() }
+  const hint = JSON.stringify({ type: 1, target: 'NotificationAvailable', arguments: [{ notificationId: noticeId }] }) + '\u001e'
+  state.sockets.at(-1).send(hint)
+  state.sockets.at(-1).send(hint)
+  await expect(page.getByText('Aviso en vivo', { exact: true })).toHaveCount(1)
+  expect(state.registrations).toHaveLength(0)
+  expect(await page.evaluate(() => window.pushTest.permissionRequests)).toBe(0)
+})
+
+test('company selection works without push and changing context closes the previous hub', async ({ page }) => {
+  const { state } = await setup(page, { permission: 'denied', contexts: [organization, otherOrganization] })
+  await page.goto('/parent/notifications')
+  expect(state.sockets).toHaveLength(0)
+  await page.getByLabel('Empresa de tus notificaciones').selectOption(organization)
+  await expect.poll(() => state.sockets.length).toBe(1)
+  state.notice = { id: noticeId, title: 'Empresa anterior', body: 'Contenido de A' }
+  state.sockets[0].send(JSON.stringify({ type: 1, target: 'NotificationAvailable', arguments: [{ notificationId: noticeId }] }) + '\u001e')
+  await expect(page.getByText('Empresa anterior', { exact: true })).toBeVisible()
+  state.notice = { id: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', title: 'Empresa actual', body: 'Contenido de B' }
+  await page.getByLabel('Empresa de tus notificaciones').selectOption(otherOrganization)
+  await expect.poll(() => state.closed).toBeGreaterThan(0)
+  await expect(page.getByText('Empresa actual', { exact: true })).toBeVisible()
+  await expect(page.getByText('Empresa anterior', { exact: true })).toHaveCount(0)
+  await expect.poll(() => state.requests.filter(r => r.path === '/notifications').at(-1).headers['x-organization-id']).toBe(otherOrganization)
+  expect(state.registrations).toHaveLength(0)
+})
+
+test('the bell counts unread notices beyond the loaded inbox page', async ({ page }) => {
+  await setup(page)
+  await page.route('**/api/v1/notifications/page**', route => {
+    const unread = new URL(route.request().url()).searchParams.get('unreadOnly') === 'true'
+    return route.fulfill({ json: {
+      items: unread ? Array.from({ length: 37 }, (_, i) => ({ id: `unread-${i}`, title: `Pendiente ${i}` })) : [],
+      nextCursor: null, hasMore: false,
+    } })
+  })
+  await page.goto('/parent/notifications')
+  await expect(page.getByText('37 sin leer', { exact: true })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Notificaciones, 37 sin leer' }).first()).toBeVisible()
+})
+
+test('revocation clears the inbox and closes its company connection on revalidation', async ({ page }) => {
+  const contexts = [organization]
+  const { state } = await setup(page, { contexts })
+  state.notice = { id: noticeId, title: 'Aviso revocado', body: 'Vinculo previo' }
+  await page.goto('/parent/notifications')
+  await expect(page.getByText('Aviso revocado', { exact: true })).toBeVisible()
+  await expect.poll(() => state.sockets.length).toBeGreaterThan(0)
+  contexts.splice(0)
+  await page.evaluate(() => window.dispatchEvent(new Event('online')))
+  await expect(page.getByText('Aviso revocado', { exact: true })).toHaveCount(0)
+  await expect.poll(() => state.closed).toBeGreaterThan(0)
 })

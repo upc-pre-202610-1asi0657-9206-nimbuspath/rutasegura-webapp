@@ -135,6 +135,7 @@ export const usePushNotificationsStore = defineStore('push-notifications', {
         const notification = await fetchNotification(id)
         if (readAuthSession()?.token !== session.token) return
         useNotificationsStore().accept(notification)
+        void useNotificationsStore().load()
         if (foreground && Notification.permission === 'granted') {
           await exclusive(async () => {
             const latest = readInstallation()

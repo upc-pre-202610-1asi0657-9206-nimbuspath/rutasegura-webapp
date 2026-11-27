@@ -89,3 +89,9 @@ Las pruebas HTTP controladas no sustituyen el ensayo con Gateway/backend despleg
 PARENT dispone de `/parent/tracking` con selección de hijo/viaje, mapa y asistencia autorizados. El detalle ADMIN de viajes se actualiza con SignalR/REST y permite atender/cerrar SOS. Se limpian datos y canales al finalizar o perder acceso.
 
 [Uso, contratos y validación pendiente](docs/SEGUIMIENTO-Y-SOS.md). Pruebas específicas: `npm run test:tracking`. El recorrido real con app/Gateway y la medición de latencia siguen siendo una puerta de cierre de integración.
+# Prueba con AWS y Notifications
+
+`npm run dev:aws` abre la web local en **http://127.0.0.1:5174/** y reenvía API/hubs al Gateway existente. No cambia AWS. Para otro origen, definir `RUTASEGURA_TEST_GATEWAY` en el proceso. La guía de cuentas/ruta/caminata está en `E:\rutasegura-backend\docs\PRUEBA-CAMINATA.md`.
+
+La bandeja ya incorpora selector de empresa independiente del permiso push, SignalR con fallback a Long Polling, recuperación periódica y conteo autorizado de no leídos paginado (si supera el presupuesto de 2000, muestra `+`). Cambiar empresa/sesión cancela solicitudes y desconecta el hub previo. Hay 64 pruebas de navegador aprobadas; login ADMIN/PARENT, bandeja y cuatro alumnos del seed se comprobaron también contra AWS. HTTPS y alojamiento público siguen pendientes por indicación de no modificar AWS y falta de dominio.
+

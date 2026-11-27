@@ -1,4 +1,4 @@
-import { HubConnectionBuilder, LogLevel } from '@microsoft/signalr'
+import { HubConnectionBuilder, HttpTransportType, LogLevel } from '@microsoft/signalr'
 import { readAuthToken } from '@/shared/api/authSessionStorage'
 export function trackingHubUrl() {
   const explicit = import.meta.env.VITE_TRACKING_HUB_URL
@@ -15,6 +15,7 @@ export function trackingHubUrl() {
 export function createTripConnection() {
   return new HubConnectionBuilder()
     .withUrl(trackingHubUrl(), {
+      transport: HttpTransportType.WebSockets | HttpTransportType.LongPolling,
       accessTokenFactory: () => readAuthToken() || '',
     })
     .withAutomaticReconnect([0, 2000, 10000, 30000])

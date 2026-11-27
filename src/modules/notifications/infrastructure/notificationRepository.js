@@ -18,6 +18,21 @@ export async function fetchNotificationPage(params, signal) {
   return createNotificationPage(data)
 }
 
+// Count authorized unread pages, with an explicit lower bound if the history exceeds the scan budget.
+export async function fetchUnreadSummary(signal) {
+  let cursor
+  let count = 0
+  const known = new Set()
+  for (let pageNumber = 0; pageNumber < 20; pageNumber++) {
+    const page = await fetchNotificationPage({ unreadOnly: true, limit: 100, ...(cursor ? { cursor } : {}) }, signal)
+    for (const item of page.items) if (!item.read && !known.has(item.id)) { known.add(item.id); count++ }
+    if (!page.hasMore || !page.nextCursor) return { count, hasMore: false }
+    if (cursor === page.nextCursor) return { count, hasMore: true }
+    cursor = page.nextCursor
+  }
+  return { count, hasMore: true }
+}
+
 export async function fetchNotification(notificationId, signal) {
   const { data } = await apiClient.get(
     `/notifications/${encodeURIComponent(notificationId)}`,

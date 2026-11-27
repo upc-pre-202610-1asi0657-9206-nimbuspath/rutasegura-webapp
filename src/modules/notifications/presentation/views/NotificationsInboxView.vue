@@ -1,11 +1,14 @@
 <script setup>
-import { watch } from 'vue'
+import { onBeforeUnmount, watch } from 'vue'
+import NotificationCompanySelector from '../components/NotificationCompanySelector.vue'
+import { notificationScope } from '../../infrastructure/notificationScope'
 import { useRoute } from 'vue-router'
 import PushNotificationSettings from '../components/PushNotificationSettings.vue'
 import { Bell, CheckCheck, LoaderCircle, RefreshCcw } from 'lucide-vue-next'
 import { useNotificationsStore } from '../../application/notificationsStore'
 
 const store = useNotificationsStore()
+store.inboxOpen = true
 
 function formatDate(value) {
   const time = Date.parse(value)
@@ -20,6 +23,8 @@ async function reload() {
   if (/^[0-9a-f-]{36}$/i.test(route.query.notificationId || '')) await store.open(route.query.notificationId)
 }
 watch(() => route.query.notificationId, reload, { immediate: true })
+watch(() => notificationScope.selectedId, id => { if (id) void reload() })
+onBeforeUnmount(() => { store.paginated = false; store.inboxOpen = false })
 </script>
 
 <template>
@@ -31,7 +36,7 @@ watch(() => route.query.notificationId, reload, { immediate: true })
         </span>
         <div>
           <h2 class="text-base font-bold text-slate-900">Notificaciones</h2>
-          <p class="text-xs text-slate-500">{{ store.unreadCount }} sin leer</p>
+          <p class="text-xs text-slate-500">{{ store.unreadCount }}{{ store.unreadHasMore ? '+' : '' }} sin leer</p>
         </div>
       </div>
       <button
@@ -46,6 +51,7 @@ watch(() => route.query.notificationId, reload, { immediate: true })
       </button>
     </header>
 
+    <NotificationCompanySelector />
     <PushNotificationSettings />
 
     <p v-if="store.error" role="alert" class="mb-3 rounded-xl bg-red-50 px-4 py-3 text-sm font-medium text-red-700">

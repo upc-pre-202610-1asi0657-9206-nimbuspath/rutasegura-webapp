@@ -42,6 +42,8 @@ onMounted(() => {
         <h2 class="text-base font-bold text-slate-900">Enviar comunicado</h2>
       </header>
 
+      <p class="mb-4 text-sm text-slate-600">El comunicado se envía a las familias con inscripción vigente y a los conductores verificados de tu empresa.</p>
+
       <form class="space-y-3" novalidate @submit.prevent="submit">
         <div>
           <label for="announcement-title" class="mb-1 block text-xs font-semibold text-slate-700">Título</label>

@@ -33,3 +33,4 @@ dist-ssr
 # Browser verification artifacts
 playwright-report/
 test-results/
+artifacts/

@@ -25,13 +25,6 @@ onMounted(() => { void loadNotificationScope().catch(() => {}) })
         <BellRing :size="16" aria-hidden="true" /> {{ push.busy ? 'Activando…' : 'Activar notificaciones' }}
       </button>
     </div>
-    <div v-if="notificationScope.organizationIds.length > 1" class="rs-stack min-w-0">
-      <label for="notification-company" class="text-sm font-semibold">Empresa de tus notificaciones</label>
-      <select id="notification-company" class="rs-input w-full min-w-0 max-w-full" :value="notificationScope.selectedId" :disabled="push.busy" @change="push.changeOrganization($event.target.value)">
-        <option disabled value="">Selecciona una empresa</option>
-        <option v-for="id in notificationScope.organizationIds" :key="id" :value="id">Empresa {{ id }}</option>
-      </select>
-    </div>
     <p v-if="notificationScope.error" role="alert" class="text-sm text-red-700">{{ notificationScope.error }}</p>
     <p v-else-if="!notificationScope.organizationIds.length" class="text-sm text-slate-600">Necesitas un vínculo verificado con una empresa para activar los avisos.</p>
     <p v-if="!push.supported" class="text-sm text-slate-600">Este navegador requiere HTTPS o localhost y soporte de notificaciones. Puedes seguir consultando la bandeja.</p>

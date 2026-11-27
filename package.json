@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:aws": "node scripts/start-aws.mjs",
     "build": "vite build",
     "preview": "vite preview",
     "test:auth": "playwright test tests/browser/auth.spec.js",
