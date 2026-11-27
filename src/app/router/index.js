@@ -35,6 +35,11 @@ const AdminOrganizationView = () =>
 
 const routes = [
   {
+    path: '/notifications/open',
+    component: () => import('@/modules/notifications/presentation/views/NotificationOpenView.vue'),
+    meta: { requiresAuth: true, roles: ['ADMIN', 'PARENT'] },
+  },
+  {
     path: '/',
     redirect: '/login',
   },

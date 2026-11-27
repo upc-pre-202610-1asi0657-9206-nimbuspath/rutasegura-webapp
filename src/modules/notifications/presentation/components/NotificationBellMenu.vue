@@ -14,7 +14,7 @@ const props = defineProps({
 const store = useNotificationsStore()
 const popover = ref(null)
 
-const latest = computed(() => store.items.slice(0, 5))
+const latest = computed(() => store.summaryItems.slice(0, 5))
 const badge = computed(() => (store.unreadCount > 99 ? '99+' : String(store.unreadCount)))
 const label = computed(() =>
   store.unreadCount
@@ -71,14 +71,14 @@ onBeforeUnmount(() => {
       <div class="w-[min(22rem,85vw)]">
         <div class="flex items-center justify-between pb-2">
           <strong class="text-sm font-bold text-slate-900">Notificaciones</strong>
-          <LoaderCircle v-if="store.loading" :size="15" class="animate-spin text-slate-400" aria-hidden="true" />
+          <LoaderCircle v-if="store.summaryLoading" :size="15" class="animate-spin text-slate-400" aria-hidden="true" />
         </div>
 
-        <p v-if="store.error" role="alert" class="rounded-lg bg-red-50 px-3 py-2 text-xs font-medium text-red-700">
-          {{ store.error }}
+        <p v-if="store.summaryError" role="alert" class="rounded-lg bg-red-50 px-3 py-2 text-xs font-medium text-red-700">
+          {{ store.summaryError }}
         </p>
 
-        <p v-else-if="store.loaded && !latest.length" class="px-1 py-4 text-center text-xs text-slate-500">
+        <p v-else-if="store.summaryLoaded && !latest.length" class="px-1 py-4 text-center text-xs text-slate-500">
           No tienes notificaciones.
         </p>
 

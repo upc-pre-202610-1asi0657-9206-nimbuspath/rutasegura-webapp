@@ -28,7 +28,24 @@ No se incluyen cuentas ni contraseñas. Utilizar las cuentas del entorno proporc
 
 `main.js` configura el ciclo de sesión. `apiClient.js` no depende del router ni de Pinia; el composition root conecta los handlers. La futura conexión SignalR debe desconectarse al cambiar/cerrar sesión y volver a validar las suscripciones.
 
-## Identidad visual
+## Notificaciones de escritorio
+
+En la campana, abrir **Ver todas** y pulsar **Activar notificaciones**. El permiso se solicita al pulsar el botón. La aplicación registra el token en Notifications con la sesión y la empresa autorizada. El mismo botón permite desactivarlas. Al recargar o volver a la pestaña se actualiza la suscripción existente, sin volver a pedir permiso. Al cerrar sesión se retira el registro push del navegador y se solicita la baja de la suscripción del servidor. Si hay varias empresas autorizadas, elegir una en la bandeja.
+
+La configuración pública de Firebase y VAPID está en `public/firebase-config.js`. Corresponde al proyecto que el equipo ya utilizó en las pruebas locales. El SDK se carga desde el CDN oficial al activar o restaurar una suscripción. Los archivos `firebase-config.js` y `firebase-messaging-sw.js` deben servirse desde la raíz. Para producción se requiere HTTPS. En desarrollo funciona desde localhost contra el Gateway configurado en Vite.
+
+Los mensajes en primer plano actualizan la bandeja y muestran un aviso genérico de escritorio. En segundo plano, el service worker recibe el mensaje y evita duplicar la notificación que muestra Firebase. Al pulsarla se abre la bandeja del rol autenticado y se consulta el contenido por REST, con autorización vigente. La recepción depende de los permisos del navegador y del sistema operativo.
+
+Cada perfil de navegador mantiene una suscripción para una cuenta y empresa. Para cambiarla, desactivar desde la cuenta anterior o cerrar su sesión. Los tokens no se transfieren entre propietarios. El mensaje de escritorio contiene texto genérico, sin nombres de alumnos, ubicaciones ni contenido del comunicado.
+
+Para comprobarlo contra AWS, activar desde la sesión PARENT, dejar la pestaña en segundo plano y publicar un comunicado nuevo desde ADMIN para esa familia. Comprobar la notificación del sistema operativo y su apertura en la bandeja. Esta prueba manual acredita el proveedor real. Las pruebas automatizadas usan transporte Firebase y respuestas HTTP controlados.
+
+```powershell
+node --test tests/notification-worker.test.js
+npx playwright test tests/browser/notifications.spec.js
+```
+
+## Identidad visual compartida
 
 `src/styles/main.css` contiene los tokens tomados de `lib/core/theme` de la app móvil: navy `#15243B`, amarillo `#F2B705`, fondo `#F3F3EF`, superficies, texto y estados. Archivo y Archivo Expanded se sirven localmente desde `public/fonts` con su licencia OFL. `primePreset.js` alinea PrimeVue con la misma paleta. Se conserva la estructura de las pantallas existentes.
 

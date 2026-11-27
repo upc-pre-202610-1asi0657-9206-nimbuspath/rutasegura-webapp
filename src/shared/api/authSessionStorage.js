@@ -1,5 +1,6 @@
 const AUTH_SESSION_KEY = 'rutasegura.auth.session'
 const listeners = new Set()
+const endingListeners = new Set()
 let sessionController = new AbortController()
 
 // Decoding exp only schedules client-side expiry; IAM remains the authority for identity and permissions.
@@ -24,6 +25,16 @@ export function onAuthSessionChange(listener) {
   listeners.add(listener)
   return () => listeners.delete(listener)
 }
+export function onAuthSessionEnding(listener) {
+  endingListeners.add(listener)
+  return () => endingListeners.delete(listener)
+}
+function notifySessionEnding(session) {
+  if (!session) return
+  for (const listener of endingListeners) {
+    try { listener(session) } catch { /* Session invalidation must complete even if cleanup fails. */ }
+  }
+}
 function notifySessionChange(reason) {
   // An old account's requests must not populate another account's views.
   sessionController.abort()
@@ -31,11 +42,14 @@ function notifySessionChange(reason) {
   listeners.forEach((listener) => listener(reason))
 }
 export function saveAuthSession(session) {
+  const previous = readAuthSession()
+  if (previous && previous.user.id !== session.user.id) notifySessionEnding(previous)
   try { sessionStorage.setItem(AUTH_SESSION_KEY, JSON.stringify(session)) }
   catch { throw new Error('Tu navegador no permite guardar la sesión. Habilita el almacenamiento para este sitio e inténtalo nuevamente.') }
   notifySessionChange('signed-in')
 }
 export function clearAuthSession(reason = 'signed-out') {
+  notifySessionEnding(readAuthSession())
   try {
     sessionStorage.removeItem(AUTH_SESSION_KEY)
     for (const key of Object.keys(sessionStorage)) if (key.startsWith('rutasegura.operation-draft.')) sessionStorage.removeItem(key)

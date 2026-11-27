@@ -3,6 +3,7 @@ import { apiError } from '@/shared/utils/forms'
 import { countUnread, sortByNewest, validateAnnouncement } from '../domain/notification'
 import {
   fetchFailedDeliveries,
+  fetchNotification,
   fetchNotificationPage,
   fetchNotifications,
   markNotificationRead,
@@ -11,10 +12,16 @@ import {
 } from '../infrastructure/notificationRepository'
 
 let controller = null
+let summaryController = null
 
 export const useNotificationsStore = defineStore('notifications', {
   state: () => ({
     items: [],
+    summaryItems: [],
+    summaryLoading: false,
+    summaryLoaded: false,
+    summaryError: '',
+    paginated: false,
     pageMeta: {},
     loading: false,
     error: '',
@@ -31,28 +38,39 @@ export const useNotificationsStore = defineStore('notifications', {
     replayNotice: '',
   }),
   getters: {
-    unreadCount: (state) => countUnread(state.items),
+    unreadCount: (state) => countUnread([...new Map([...state.items, ...state.summaryItems].map(item => [item.id, item])).values()]),
     isMarking: (state) => (id) => state.markingIds.includes(id),
   },
   actions: {
+    accept(notification) {
+      if (!notification?.id) return
+      this.items = sortByNewest([notification, ...this.items.filter(item => item.id !== notification.id)])
+      this.summaryItems = sortByNewest([notification, ...this.summaryItems.filter(item => item.id !== notification.id)]).slice(0, 25)
+    },
+    async open(id) {
+      try { this.accept(await fetchNotification(id)) }
+      catch (error) { this.error = apiError(error, 'No tienes acceso a este aviso o ya no está disponible.') }
+    },
     async load() {
-      controller?.abort()
-      const request = (controller = new AbortController())
-      this.loading = true
-      this.error = ''
+      if (this.summaryLoading) return
+      const request = (summaryController = new AbortController())
+      this.summaryLoading = true
+      this.summaryError = ''
       try {
         const items = await fetchNotifications(undefined, request.signal)
         if (request.signal.aborted) return
-        this.items = sortByNewest(items)
-        this.loaded = true
+        this.summaryItems = sortByNewest(items)
+        if (!this.paginated) this.items = this.summaryItems
+        this.summaryLoaded = true
       } catch (error) {
         if (error?.code === 'ERR_CANCELED') return
-        this.error = apiError(error, 'No fue posible cargar las notificaciones.')
+        this.summaryError = apiError(error, 'No fue posible cargar las notificaciones.')
       } finally {
-        if (controller === request) this.loading = false
+        if (summaryController === request) this.summaryLoading = false
       }
     },
     async loadPage(params) {
+      this.paginated = true
       controller?.abort()
       const request = (controller = new AbortController())
       this.loading = true
@@ -96,6 +114,8 @@ export const useNotificationsStore = defineStore('notifications', {
           item.read = true
           item.readAt = updated?.readAt ?? item.readAt
         }
+        const summary = this.summaryItems.find(entry => entry.id === id)
+        if (summary) { summary.read = true; summary.readAt = updated?.readAt ?? summary.readAt }
       } catch (error) {
         this.error = apiError(error, 'No fue posible marcar la notificación como leída.')
       } finally {
@@ -150,6 +170,7 @@ export const useNotificationsStore = defineStore('notifications', {
     },
     reset() {
       controller?.abort()
+      summaryController?.abort()
       this.$reset()
     },
   },
