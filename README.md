@@ -32,6 +32,8 @@ No se incluyen cuentas ni contraseñas. Utilizar las cuentas del entorno proporc
 
 En la campana, abrir **Ver todas** y pulsar **Activar notificaciones**. El permiso se solicita al pulsar el botón. La aplicación registra el token en Notifications con la sesión y la empresa autorizada. El mismo botón permite desactivarlas. Al recargar o volver a la pestaña se actualiza la suscripción existente, sin volver a pedir permiso. Al cerrar sesión se retira el registro push del navegador y se solicita la baja de la suscripción del servidor. Si hay varias empresas autorizadas, elegir una en la bandeja.
 
+Con la suscripción activa, **Probar aviso de escritorio** solicita una notificación local al navegador. Si se acepta pero no aparece, revisar el centro de notificaciones de Windows, No molestar y el permiso del navegador para mostrar banners. Esta prueba permite comprobar la presentación local antes de publicar otro comunicado.
+
 La configuración pública de Firebase y VAPID está en `public/firebase-config.js`. Corresponde al proyecto que el equipo ya utilizó en las pruebas locales. El SDK se carga desde el CDN oficial al activar o restaurar una suscripción. Los archivos `firebase-config.js` y `firebase-messaging-sw.js` deben servirse desde la raíz. Para producción se requiere HTTPS. En desarrollo funciona desde localhost contra el Gateway configurado en Vite.
 
 Los mensajes en primer plano actualizan la bandeja y muestran un aviso genérico de escritorio. En segundo plano, el service worker recibe el mensaje y evita duplicar la notificación que muestra Firebase. Al pulsarla se abre la bandeja del rol autenticado y se consulta el contenido por REST, con autorización vigente. La recepción depende de los permisos del navegador y del sistema operativo.

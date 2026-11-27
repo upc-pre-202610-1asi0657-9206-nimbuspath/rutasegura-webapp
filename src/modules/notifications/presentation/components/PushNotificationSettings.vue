@@ -18,6 +18,9 @@ onMounted(() => { void loadNotificationScope().catch(() => {}) })
       <button v-if="push.enabled || push.registered" type="button" class="rs-button-secondary" :disabled="push.busy" @click="push.disable()">
         <BellOff :size="16" aria-hidden="true" /> Desactivar notificaciones
       </button>
+      <button v-if="push.enabled" type="button" class="rs-button-secondary" :disabled="push.busy" @click="push.testDesktopNotification()">
+        Probar aviso de escritorio
+      </button>
       <button v-if="!push.enabled" type="button" class="rs-button-primary" :disabled="push.busy || !push.supported || !notificationScope.selectedId" @click="push.synchronize({ requestPermission: true })">
         <BellRing :size="16" aria-hidden="true" /> {{ push.busy ? 'Activando…' : 'Activar notificaciones' }}
       </button>

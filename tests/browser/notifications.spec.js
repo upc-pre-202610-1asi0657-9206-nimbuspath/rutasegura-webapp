@@ -118,6 +118,18 @@ test('denied permission leaves the inbox usable and creates no subscription', as
   await expect(page.getByRole('button', { name: 'Actualizar', exact: true })).toBeEnabled()
 })
 
+test('desktop test requests a local alert without creating a server notification', async ({ page }) => {
+  const { state } = await setup(page)
+  await activate(page)
+  await page.getByRole('button', { name: 'Probar aviso de escritorio', exact: true }).click()
+  await expect.poll(() => page.evaluate(() => window.pushTest.shown.length)).toBe(1)
+  expect(await page.evaluate(() => window.pushTest.shown[0].body)).toBe('Esta es una prueba local de notificaciones.')
+  expect(await page.evaluate(() => window.pushTest.shown[0].data)).toEqual({})
+  expect(state.notice).toBeNull()
+  expect(state.registrations).toHaveLength(1)
+  await expect(page.getByRole('status').filter({ hasText: 'El navegador aceptó la prueba' })).toBeVisible()
+})
+
 test('renews the token for the same installation on reload without asking permission again', async ({ page }) => {
   const { state } = await setup(page, { permission: 'granted' })
   await activate(page)

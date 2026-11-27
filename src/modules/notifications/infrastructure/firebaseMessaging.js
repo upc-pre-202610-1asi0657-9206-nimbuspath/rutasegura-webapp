@@ -55,10 +55,10 @@ export async function removeBrowserPushToken() {
 }
 
 export async function displayForegroundPush(notificationId) {
-  if (!registration || Notification.permission !== 'granted') return
+  if (!registration || Notification.permission !== 'granted') throw new Error('Activa las notificaciones en este navegador antes de probarlas.')
   await registration.showNotification('RutaSegura', {
-    body: 'Tienes un nuevo aviso. Ingresa a RutaSegura para revisarlo.',
-    tag: notificationId.replaceAll('-', ''),
-    data: { notificationId },
+    body: notificationId ? 'Tienes un nuevo aviso. Ingresa a RutaSegura para revisarlo.' : 'Esta es una prueba local de notificaciones.',
+    tag: notificationId ? notificationId.replaceAll('-', '') : 'rutasegura-desktop-test',
+    data: notificationId ? { notificationId } : {},
   })
 }

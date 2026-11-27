@@ -28,6 +28,14 @@ function explain(error) {
 export const usePushNotificationsStore = defineStore('push-notifications', {
   state: () => ({ enabled: false, registered: false, busy: false, error: '', notice: '', permission: 'default', supported: pushSupported() }),
   actions: {
+    async testDesktopNotification() {
+      this.error = ''
+      this.notice = ''
+      try {
+        await displayForegroundPush()
+        this.notice = 'El navegador aceptó la prueba. Revisa el aviso de Windows o abre el centro de notificaciones con Win + N.'
+      } catch (error) { this.error = explain(error) }
+    },
     async synchronize({ requestPermission = false } = {}) {
       if (this.busy) return
       this.error = ''
