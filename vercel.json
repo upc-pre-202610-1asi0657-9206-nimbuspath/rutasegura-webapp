@@ -1,8 +1,12 @@
 {
   "rewrites": [
     {
-      "source": "/api/v1/:path*",
-      "destination": "http://ec2-3-216-48-246.compute-1.amazonaws.com"
+      "source": "/api/:path*",
+      "destination": "http://ec2-3-216-48-246.compute-1.amazonaws.com*"
+    },
+    {
+      "source": "/hubs/:path*",
+      "destination": "http://ec2-3-216-48-246.compute-1.amazonaws.com*"
     },
     {
       "source": "/(.*)",
